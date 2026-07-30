@@ -67,6 +67,7 @@ let state = {
 let selectedEnrollmentId = "";
 let isStudentModalOpen = false;
 let selectedLessonIndex = 0;
+let selectedSettlementEnrollmentIds = new Set();
 let cloudSaveTimer = 0;
 let cloudSyncEnabled = false;
 let isHydratingState = true;
@@ -197,7 +198,11 @@ const loadState = async () => {
   }
 
   try {
-    const response = await fetch(`./tennis-data-2026-07-05.json?v=${Date.now()}`);
+    const seedFile =
+      window.location.protocol === "file:"
+        ? "./tennis-preview-data.json"
+        : "./tennis-data-2026-07-05.json";
+    const response = await fetch(`${seedFile}?v=${Date.now()}`);
     if (!response.ok) return;
     const data = await response.json();
     applySeedData(data, saved);
@@ -613,9 +618,19 @@ const renderSalary = () => {
 const renderEnrollments = () => {
   const target = document.querySelector("#enrollment-list");
   const countTarget = document.querySelector("#record-count");
+  const selectAll = document.querySelector("#select-visible-enrollments");
+  const selectedCountTarget = document.querySelector("#selected-settlement-count");
+  const batchButton = document.querySelector("#batch-settlement-done");
 
   if (!state.enrollments.length) {
     if (countTarget) countTarget.textContent = "0 条";
+    selectedSettlementEnrollmentIds.clear();
+    if (selectAll) {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
+    if (selectedCountTarget) selectedCountTarget.textContent = "已选 0 条";
+    if (batchButton) batchButton.disabled = true;
     target.innerHTML = emptyState(
       "暂无报名记录",
       "录入报名后，系统会自动生成结课日期和上课日历。"
@@ -669,6 +684,34 @@ const renderEnrollments = () => {
     countTarget.textContent = `${filtered.length} / ${state.enrollments.length} 条`;
   }
 
+  const existingIds = new Set(state.enrollments.map((enrollment) => enrollment.id));
+  selectedSettlementEnrollmentIds = new Set(
+    [...selectedSettlementEnrollmentIds].filter((id) => existingIds.has(id))
+  );
+
+  const visibleIds = filtered.map((enrollment) => enrollment.id);
+  const visibleIdSet = new Set(visibleIds);
+  selectedSettlementEnrollmentIds = new Set(
+    [...selectedSettlementEnrollmentIds].filter((id) => visibleIdSet.has(id))
+  );
+  const visibleSelectedCount = visibleIds.filter((id) =>
+    selectedSettlementEnrollmentIds.has(id)
+  ).length;
+
+  if (selectAll) {
+    selectAll.checked = Boolean(visibleIds.length && visibleSelectedCount === visibleIds.length);
+    selectAll.indeterminate = Boolean(
+      visibleSelectedCount && visibleSelectedCount < visibleIds.length
+    );
+    selectAll.disabled = !visibleIds.length;
+  }
+  if (selectedCountTarget) {
+    selectedCountTarget.textContent = `已选 ${selectedSettlementEnrollmentIds.size} 条`;
+  }
+  if (batchButton) {
+    batchButton.disabled = selectedSettlementEnrollmentIds.size === 0;
+  }
+
   if (!filtered.length) {
     target.innerHTML = emptyState("没有匹配记录", "调整筛选条件后会显示对应报名记录。");
     return;
@@ -691,6 +734,14 @@ const renderEnrollments = () => {
 
       return `
         <div class="record ${enrollment.id === selectedEnrollmentId ? "selected" : ""} ${lowRemaining ? "low-remaining" : ""}">
+          <label class="record-checkbox" aria-label="选择 ${enrollment.studentName}">
+            <input
+              name="settlementSelection"
+              type="checkbox"
+              value="${enrollment.id}"
+              ${selectedSettlementEnrollmentIds.has(enrollment.id) ? "checked" : ""}
+            />
+          </label>
           <div>
             <strong>${enrollment.studentName} · ${courseName}</strong>
             <small>${coach?.name || "未指定教练"} · ${classLevel} · ${getClassTime(enrollment)} · 开课 ${enrollment.startDate} · 结课 ${completion} · 剩余 ${remaining} 次 · 共 ${dates.length} 次课 · ${status} · ${settlementStatus} · 结算月份 ${settlementMonth} · 提成 ${currency.format(commission)}</small>
@@ -1017,6 +1068,39 @@ const bindEvents = () => {
   document.querySelector("#record-filters").addEventListener("input", renderEnrollments);
 
   document
+    .querySelector("#select-visible-enrollments")
+    .addEventListener("change", (event) => {
+      const visibleCheckboxes = document.querySelectorAll(
+        '[name="settlementSelection"]'
+      );
+      visibleCheckboxes.forEach((checkbox) => {
+        if (event.target.checked) {
+          selectedSettlementEnrollmentIds.add(checkbox.value);
+        } else {
+          selectedSettlementEnrollmentIds.delete(checkbox.value);
+        }
+      });
+      renderEnrollments();
+    });
+
+  document
+    .querySelector("#batch-settlement-done")
+    .addEventListener("click", () => {
+      if (!selectedSettlementEnrollmentIds.size) return;
+
+      state.enrollments.forEach((enrollment) => {
+        if (selectedSettlementEnrollmentIds.has(enrollment.id)) {
+          enrollment.settlementStatus = "已结算";
+          enrollment.settlementMonth = getSettlementMonth(enrollment);
+        }
+      });
+
+      selectedSettlementEnrollmentIds.clear();
+      saveState();
+      render();
+    });
+
+  document
     .querySelector("#batch-cancel-form")
     .addEventListener("submit", (event) => {
       event.preventDefault();
@@ -1290,6 +1374,16 @@ const bindEvents = () => {
   });
 
   document.body.addEventListener("change", (event) => {
+    if (event.target.name === "settlementSelection") {
+      if (event.target.checked) {
+        selectedSettlementEnrollmentIds.add(event.target.value);
+      } else {
+        selectedSettlementEnrollmentIds.delete(event.target.value);
+      }
+      renderEnrollments();
+      return;
+    }
+
     if (event.target.dataset.courtEnrollments !== undefined) {
       const court = event.target.value.trim();
       const ids = event.target.dataset.courtEnrollments.split(",");

@@ -551,13 +551,48 @@ h2 {
   padding: 8px 20px 20px;
 }
 
+.batch-settlement-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px 4px;
+  color: var(--muted);
+  border-top: 1px solid rgba(229, 231, 235, 0.72);
+}
+
+.batch-select-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.batch-select-control input,
+.record-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #111827;
+}
+
+.batch-settlement-bar span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .record {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   padding: 16px 0;
   border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+.record-checkbox {
+  display: grid;
+  place-items: center;
 }
 
 .record.selected {
@@ -1118,6 +1153,11 @@ td strong {
     grid-template-columns: 1fr;
   }
 
+  .batch-settlement-bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
   .topbar {
     display: grid;
     min-height: 0;
@@ -1146,6 +1186,10 @@ td strong {
 
   .record {
     grid-template-columns: 1fr;
+  }
+
+  .record-checkbox {
+    place-items: start;
   }
 
   .record-actions {
@@ -1423,6 +1467,16 @@ td strong {
               <input id="filter-settlement-month" name="settlementMonth" type="month" />
             </label>
           </form>
+          <div class="batch-settlement-bar">
+            <label class="batch-select-control">
+              <input id="select-visible-enrollments" type="checkbox" />
+              选择当前筛选结果
+            </label>
+            <span id="selected-settlement-count">已选 0 条</span>
+            <button id="batch-settlement-done" class="ghost-button" type="button" disabled>
+              标记为已结算
+            </button>
+          </div>
           <div id="enrollment-list" class="list-area"></div>
         </article>
       </section>
@@ -1569,6 +1623,7 @@ let state = {
 let selectedEnrollmentId = "";
 let isStudentModalOpen = false;
 let selectedLessonIndex = 0;
+let selectedSettlementEnrollmentIds = new Set();
 let cloudSaveTimer = 0;
 let cloudSyncEnabled = false;
 let isHydratingState = true;
@@ -1699,7 +1754,11 @@ const loadState = async () => {
   }
 
   try {
-    const response = await fetch(`./tennis-data-2026-07-05.json?v=${Date.now()}`);
+    const seedFile =
+      window.location.protocol === "file:"
+        ? "./tennis-preview-data.json"
+        : "./tennis-data-2026-07-05.json";
+    const response = await fetch(`${seedFile}?v=${Date.now()}`);
     if (!response.ok) return;
     const data = await response.json();
     applySeedData(data, saved);
@@ -2115,9 +2174,19 @@ const renderSalary = () => {
 const renderEnrollments = () => {
   const target = document.querySelector("#enrollment-list");
   const countTarget = document.querySelector("#record-count");
+  const selectAll = document.querySelector("#select-visible-enrollments");
+  const selectedCountTarget = document.querySelector("#selected-settlement-count");
+  const batchButton = document.querySelector("#batch-settlement-done");
 
   if (!state.enrollments.length) {
     if (countTarget) countTarget.textContent = "0 条";
+    selectedSettlementEnrollmentIds.clear();
+    if (selectAll) {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
+    if (selectedCountTarget) selectedCountTarget.textContent = "已选 0 条";
+    if (batchButton) batchButton.disabled = true;
     target.innerHTML = emptyState(
       "暂无报名记录",
       "录入报名后，系统会自动生成结课日期和上课日历。"
@@ -2171,6 +2240,34 @@ const renderEnrollments = () => {
     countTarget.textContent = `${filtered.length} / ${state.enrollments.length} 条`;
   }
 
+  const existingIds = new Set(state.enrollments.map((enrollment) => enrollment.id));
+  selectedSettlementEnrollmentIds = new Set(
+    [...selectedSettlementEnrollmentIds].filter((id) => existingIds.has(id))
+  );
+
+  const visibleIds = filtered.map((enrollment) => enrollment.id);
+  const visibleIdSet = new Set(visibleIds);
+  selectedSettlementEnrollmentIds = new Set(
+    [...selectedSettlementEnrollmentIds].filter((id) => visibleIdSet.has(id))
+  );
+  const visibleSelectedCount = visibleIds.filter((id) =>
+    selectedSettlementEnrollmentIds.has(id)
+  ).length;
+
+  if (selectAll) {
+    selectAll.checked = Boolean(visibleIds.length && visibleSelectedCount === visibleIds.length);
+    selectAll.indeterminate = Boolean(
+      visibleSelectedCount && visibleSelectedCount < visibleIds.length
+    );
+    selectAll.disabled = !visibleIds.length;
+  }
+  if (selectedCountTarget) {
+    selectedCountTarget.textContent = `已选 ${selectedSettlementEnrollmentIds.size} 条`;
+  }
+  if (batchButton) {
+    batchButton.disabled = selectedSettlementEnrollmentIds.size === 0;
+  }
+
   if (!filtered.length) {
     target.innerHTML = emptyState("没有匹配记录", "调整筛选条件后会显示对应报名记录。");
     return;
@@ -2193,6 +2290,14 @@ const renderEnrollments = () => {
 
       return `
         <div class="record ${enrollment.id === selectedEnrollmentId ? "selected" : ""} ${lowRemaining ? "low-remaining" : ""}">
+          <label class="record-checkbox" aria-label="选择 ${enrollment.studentName}">
+            <input
+              name="settlementSelection"
+              type="checkbox"
+              value="${enrollment.id}"
+              ${selectedSettlementEnrollmentIds.has(enrollment.id) ? "checked" : ""}
+            />
+          </label>
           <div>
             <strong>${enrollment.studentName} · ${courseName}</strong>
             <small>${coach?.name || "未指定教练"} · ${classLevel} · ${getClassTime(enrollment)} · 开课 ${enrollment.startDate} · 结课 ${completion} · 剩余 ${remaining} 次 · 共 ${dates.length} 次课 · ${status} · ${settlementStatus} · 结算月份 ${settlementMonth} · 提成 ${currency.format(commission)}</small>
@@ -2519,6 +2624,39 @@ const bindEvents = () => {
   document.querySelector("#record-filters").addEventListener("input", renderEnrollments);
 
   document
+    .querySelector("#select-visible-enrollments")
+    .addEventListener("change", (event) => {
+      const visibleCheckboxes = document.querySelectorAll(
+        '[name="settlementSelection"]'
+      );
+      visibleCheckboxes.forEach((checkbox) => {
+        if (event.target.checked) {
+          selectedSettlementEnrollmentIds.add(checkbox.value);
+        } else {
+          selectedSettlementEnrollmentIds.delete(checkbox.value);
+        }
+      });
+      renderEnrollments();
+    });
+
+  document
+    .querySelector("#batch-settlement-done")
+    .addEventListener("click", () => {
+      if (!selectedSettlementEnrollmentIds.size) return;
+
+      state.enrollments.forEach((enrollment) => {
+        if (selectedSettlementEnrollmentIds.has(enrollment.id)) {
+          enrollment.settlementStatus = "已结算";
+          enrollment.settlementMonth = getSettlementMonth(enrollment);
+        }
+      });
+
+      selectedSettlementEnrollmentIds.clear();
+      saveState();
+      render();
+    });
+
+  document
     .querySelector("#batch-cancel-form")
     .addEventListener("submit", (event) => {
       event.preventDefault();
@@ -2792,6 +2930,16 @@ const bindEvents = () => {
   });
 
   document.body.addEventListener("change", (event) => {
+    if (event.target.name === "settlementSelection") {
+      if (event.target.checked) {
+        selectedSettlementEnrollmentIds.add(event.target.value);
+      } else {
+        selectedSettlementEnrollmentIds.delete(event.target.value);
+      }
+      renderEnrollments();
+      return;
+    }
+
     if (event.target.dataset.courtEnrollments !== undefined) {
       const court = event.target.value.trim();
       const ids = event.target.dataset.courtEnrollments.split(",");

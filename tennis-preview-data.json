@@ -1,0 +1,96 @@
+{
+  "importedAt": "local-preview-2026-07-30",
+  "coaches": [
+    {
+      "id": "coach-li-runzhong",
+      "name": "李润中",
+      "level": "middle"
+    },
+    {
+      "id": "coach-zhang-rui",
+      "name": "张锐",
+      "level": "middle"
+    }
+  ],
+  "enrollments": [
+    {
+      "id": "preview-enrollment-001",
+      "studentName": "王同学",
+      "courseType": "mwf6",
+      "classLevel": "提高班",
+      "courseName": "一三五六人班",
+      "commission": 400,
+      "coachId": "coach-li-runzhong",
+      "startDate": "2026-07-06",
+      "classTime": "7-9",
+      "settlementStatus": "未结算",
+      "settlementMonth": "",
+      "totalLessons": 12,
+      "weekdayPattern": "1,3,5",
+      "court": "3"
+    },
+    {
+      "id": "preview-enrollment-002",
+      "studentName": "刘同学",
+      "courseType": "mwf6",
+      "classLevel": "提高班",
+      "courseName": "一三五六人班",
+      "commission": 400,
+      "coachId": "coach-li-runzhong",
+      "startDate": "2026-07-06",
+      "classTime": "7-9",
+      "settlementStatus": "未结算",
+      "settlementMonth": "",
+      "totalLessons": 12,
+      "weekdayPattern": "1,3,5",
+      "court": "3"
+    },
+    {
+      "id": "preview-enrollment-003",
+      "studentName": "陈同学",
+      "courseType": "tt4",
+      "classLevel": "初级班",
+      "courseName": "二四四人班",
+      "commission": 500,
+      "coachId": "coach-zhang-rui",
+      "startDate": "2026-07-07",
+      "classTime": "9-11",
+      "settlementStatus": "未结算",
+      "settlementMonth": "",
+      "totalLessons": 8,
+      "weekdayPattern": "2,4",
+      "court": "4"
+    },
+    {
+      "id": "preview-enrollment-004",
+      "studentName": "赵同学",
+      "courseType": "tt6",
+      "classLevel": "竞赛班",
+      "courseName": "二四六人班",
+      "commission": 325,
+      "coachId": "coach-zhang-rui",
+      "startDate": "2026-07-14",
+      "classTime": "9-11",
+      "settlementStatus": "已结算",
+      "settlementMonth": "2026-08",
+      "totalLessons": 8,
+      "weekdayPattern": "2,4",
+      "court": "5"
+    }
+  ],
+  "manualHours": {
+    "2026-07": {
+      "coach-li-runzhong": {
+        "privateHours": 10,
+        "groupHours": 6,
+        "sparringHours": 3
+      },
+      "coach-zhang-rui": {
+        "privateHours": 8,
+        "groupHours": 4,
+        "sparringHours": 2
+      }
+    }
+  },
+  "cancellations": []
+}

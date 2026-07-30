@@ -544,13 +544,48 @@ h2 {
   padding: 8px 20px 20px;
 }
 
+.batch-settlement-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px 4px;
+  color: var(--muted);
+  border-top: 1px solid rgba(229, 231, 235, 0.72);
+}
+
+.batch-select-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.batch-select-control input,
+.record-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #111827;
+}
+
+.batch-settlement-bar span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .record {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   padding: 16px 0;
   border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+.record-checkbox {
+  display: grid;
+  place-items: center;
 }
 
 .record.selected {
@@ -1111,6 +1146,11 @@ td strong {
     grid-template-columns: 1fr;
   }
 
+  .batch-settlement-bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
   .topbar {
     display: grid;
     min-height: 0;
@@ -1139,6 +1179,10 @@ td strong {
 
   .record {
     grid-template-columns: 1fr;
+  }
+
+  .record-checkbox {
+    place-items: start;
   }
 
   .record-actions {

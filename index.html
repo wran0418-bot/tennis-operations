@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>网球课时与工资统计</title>
-    <link rel="stylesheet" href="./styles.css?v=20260714-redesign-fix" />
+    <link rel="stylesheet" href="./styles.css?v=20260730-local-preview-data" />
   </head>
   <body>
     <main class="app-shell">
@@ -253,6 +253,16 @@
               <input id="filter-settlement-month" name="settlementMonth" type="month" />
             </label>
           </form>
+          <div class="batch-settlement-bar">
+            <label class="batch-select-control">
+              <input id="select-visible-enrollments" type="checkbox" />
+              选择当前筛选结果
+            </label>
+            <span id="selected-settlement-count">已选 0 条</span>
+            <button id="batch-settlement-done" class="ghost-button" type="button" disabled>
+              标记为已结算
+            </button>
+          </div>
           <div id="enrollment-list" class="list-area"></div>
         </article>
       </section>
@@ -319,6 +329,6 @@
       </section>
     </div>
 
-    <script src="./app.js?v=20260714-redesign-fix"></script>
+    <script src="./app.js?v=20260730-local-preview-data"></script>
   </body>
 </html>
