@@ -670,6 +670,38 @@ table {
   min-width: 860px;
 }
 
+.salary-card-detail {
+  display: grid;
+  gap: 5px;
+  min-width: 210px;
+}
+
+.salary-card-detail strong {
+  color: var(--green-dark);
+}
+
+.salary-card-detail small,
+.salary-muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.salary-card-detail div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.salary-card-detail span {
+  padding: 4px 7px;
+  color: #1f2937;
+  background: #f8fafc;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 th,
 td {
   padding: 15px 18px;

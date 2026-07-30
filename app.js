@@ -425,7 +425,7 @@ const getCompletionDate = (enrollment) => {
   return dates[dates.length - 1] || enrollment.expectedCompletionDate || enrollment.startDate;
 };
 
-const getMonthCardCommissionByCoach = (monthValue) => {
+const getMonthCardSummaryByCoach = (monthValue) => {
   const { start, end } = monthBounds(monthValue);
   const result = {};
 
@@ -437,11 +437,48 @@ const getMonthCardCommissionByCoach = (monthValue) => {
 
     const course = courseTypes[enrollment.courseType];
     const commission = toNumber(enrollment.commission) || course.commission;
-    result[enrollment.coachId] =
-      (result[enrollment.coachId] || 0) + commission;
+    const coachSummary = result[enrollment.coachId] || {
+      total: 0,
+      count: 0,
+      byCourseType: {},
+    };
+    const courseSummary = coachSummary.byCourseType[enrollment.courseType] || {
+      count: 0,
+      amount: 0,
+    };
+
+    courseSummary.count += 1;
+    courseSummary.amount += commission;
+    coachSummary.byCourseType[enrollment.courseType] = courseSummary;
+    coachSummary.count += 1;
+    coachSummary.total += commission;
+    result[enrollment.coachId] = coachSummary;
   });
 
   return result;
+};
+
+const renderMonthCardSummary = (summary) => {
+  if (!summary?.count) {
+    return '<span class="salary-muted">暂无结课</span>';
+  }
+
+  const details = Object.entries(courseTypes)
+    .map(([courseType, course]) => {
+      const item = summary.byCourseType?.[courseType];
+      if (!item?.count) return "";
+      return `<span>${course.label}：${item.count} 人 / ${currency.format(item.amount)}</span>`;
+    })
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <div class="salary-card-detail">
+      <strong>${currency.format(summary.total)}</strong>
+      <small>本月结课 ${summary.count} 人</small>
+      <div>${details}</div>
+    </div>
+  `;
 };
 
 const renderStudentLessonCalendar = (dates) => {
@@ -567,7 +604,7 @@ const renderCoaches = () => {
 const renderSalary = () => {
   const monthValue = document.querySelector("#salary-month").value;
   const monthHours = state.manualHours[monthValue] || {};
-  const monthlyCardCommission = getMonthCardCommissionByCoach(monthValue);
+  const monthlyCardSummary = getMonthCardSummaryByCoach(monthValue);
   const completedCount = state.enrollments.filter((enrollment) => {
     if (isInactiveCourse(enrollment)) return false;
 
@@ -586,7 +623,12 @@ const renderSalary = () => {
       const privateHours = toNumber(hours.privateHours);
       const groupHours = toNumber(hours.groupHours);
       const sparringHours = toNumber(hours.sparringHours);
-      const cardCommission = monthlyCardCommission[coach.id] || 0;
+      const cardSummary = monthlyCardSummary[coach.id] || {
+        total: 0,
+        count: 0,
+        byCourseType: {},
+      };
+      const cardCommission = cardSummary.total;
       const manualTotal =
         privateHours * level.privateRate +
         groupHours * level.groupRate +
@@ -603,7 +645,7 @@ const renderSalary = () => {
           <td>${privateHours} 小时 / ${currency.format(privateHours * level.privateRate)}</td>
           <td>${groupHours} 小时 / ${currency.format(groupHours * level.groupRate)}</td>
           <td>${sparringHours} 小时 / ${currency.format(sparringHours * level.sparringRate)}</td>
-          <td>${currency.format(cardCommission)}</td>
+          <td>${renderMonthCardSummary(cardSummary)}</td>
           <td><strong>${currency.format(total)}</strong></td>
         </tr>
       `;
