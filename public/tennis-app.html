@@ -1,0 +1,2653 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>网球课时与工资统计</title>
+    <style>
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", system-ui,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  --ink: #111827;
+  --muted: #6b7280;
+  --subtle: #9ca3af;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-solid: #ffffff;
+  --surface-soft: #f7f8fb;
+  --canvas: #f3f5f8;
+  --green: #0f8a5f;
+  --green-dark: #087348;
+  --blue: #2563eb;
+  --blue-soft: #eef4ff;
+  --amber: #d97706;
+  --amber-soft: #fff7ed;
+  --danger: #b42318;
+  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --radius: 18px;
+  --radius-sm: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.12), transparent 34%),
+    radial-gradient(circle at 92% 6%, rgba(15, 138, 95, 0.12), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, var(--canvas) 46%, #eef2f7 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  min-height: 42px;
+  padding: 0 16px;
+  color: #ffffff;
+  cursor: pointer;
+  background: #111827;
+  border: 0;
+  border-radius: var(--radius-sm);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+button:hover {
+  background: #000000;
+  box-shadow: 0 10px 20px rgba(17, 24, 39, 0.12);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.app-shell {
+  width: min(1320px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 46px;
+}
+
+.topbar {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 210px;
+  padding: 34px;
+  color: #ffffff;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(31, 41, 55, 0.9)),
+    linear-gradient(45deg, rgba(37, 99, 235, 0.42), transparent 55%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 26px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.topbar::before {
+  position: absolute;
+  right: -120px;
+  bottom: -170px;
+  width: 420px;
+  height: 420px;
+  content: "";
+  background: radial-gradient(circle, rgba(15, 138, 95, 0.55), transparent 66%);
+}
+
+.topbar::after {
+  position: absolute;
+  inset: auto 34px 24px auto;
+  width: 180px;
+  height: 1px;
+  content: "";
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.topbar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow,
+.section-label {
+  margin: 0 0 8px;
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topbar .eyebrow {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+h1,
+h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  max-width: 720px;
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 780;
+  line-height: 1.02;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 760;
+}
+
+.month-control {
+  display: grid;
+  gap: 9px;
+  min-width: 220px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius);
+  backdrop-filter: blur(22px);
+}
+
+.month-control label {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.month-control input {
+  color: var(--ink);
+}
+
+.tabs {
+  position: sticky;
+  top: 12px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  margin: 18px 0;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(229, 231, 235, 0.88);
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.tab-button {
+  flex: 1;
+  min-height: 44px;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.tab-button:hover {
+  color: var(--ink);
+  background: rgba(17, 24, 39, 0.05);
+  box-shadow: none;
+}
+
+.tab-button.active {
+  color: #ffffff;
+  background: #111827;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.16);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: grid;
+  gap: 18px;
+}
+
+.summary-grid,
+.work-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.work-grid {
+  grid-template-columns: minmax(340px, 0.88fr) minmax(0, 1.12fr);
+}
+
+.monthly-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.summary-card,
+.panel,
+.notes-panel {
+  background: var(--surface);
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.summary-card {
+  position: relative;
+  min-height: 132px;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.summary-card::after {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  width: 72px;
+  height: 72px;
+  content: "";
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(15, 138, 95, 0.14));
+  border-radius: 22px;
+}
+
+.summary-card span {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.summary-card strong {
+  position: relative;
+  z-index: 1;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+.section-label {
+  color: var(--blue);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px;
+}
+
+.compact-form,
+.hours-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.weekday-field {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.weekday-field legend {
+  padding: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weekday-picker label {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.weekday-picker input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.weekday-picker label:has(input:checked) {
+  color: #ffffff;
+  background: var(--blue);
+  border-color: var(--blue);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+}
+
+.weekday-picker label:hover {
+  border-color: rgba(37, 99, 235, 0.44);
+  background: var(--blue-soft);
+}
+
+.weekday-picker label:has(input:checked):hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.form-grid input,
+.form-grid select,
+.month-control input,
+.filter-bar input,
+.filter-bar select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 13px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: 0;
+}
+
+.form-grid input:focus,
+.form-grid select:focus,
+.month-control input:focus,
+.filter-bar input:focus,
+.filter-bar select:focus {
+  border-color: rgba(37, 99, 235, 0.72);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.form-grid button {
+  align-self: end;
+}
+
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px 20px 12px;
+  background: rgba(248, 250, 252, 0.58);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+.filter-bar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.record-count {
+  min-width: 84px;
+  padding: 8px 12px;
+  color: var(--blue);
+  text-align: center;
+  background: var(--blue-soft);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.readonly-field {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 13px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.operation-result {
+  margin: 0 20px 20px;
+  padding: 13px 14px;
+  color: var(--green-dark);
+  background: rgba(15, 138, 95, 0.1);
+  border: 1px solid rgba(15, 138, 95, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.operation-result[hidden] {
+  display: none;
+}
+
+.list-area {
+  padding: 8px 20px 20px;
+}
+
+.record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+.record.selected {
+  margin-inline: -10px;
+  padding-inline: 10px;
+  background: var(--blue-soft);
+  border-radius: var(--radius-sm);
+}
+
+.record.low-remaining {
+  margin-inline: -10px;
+  padding-inline: 12px;
+  background: var(--amber-soft);
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius-sm);
+}
+
+.record:last-child {
+  border-bottom: 0;
+}
+
+.record strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.record span,
+.record small {
+  color: var(--muted);
+}
+
+.warning-text {
+  display: inline-block;
+  margin-top: 7px;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.record-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ghost-button,
+.danger-button {
+  min-height: 34px;
+  padding: 0 11px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.danger-button {
+  color: var(--danger);
+}
+
+.ghost-button:hover,
+.danger-button:hover {
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+th,
+td {
+  padding: 15px 18px;
+  text-align: left;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+th {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 760;
+  background: rgba(248, 250, 252, 0.82);
+}
+
+td strong {
+  color: var(--green-dark);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 30px;
+  padding: 4px 10px;
+  color: #ffffff;
+  background: #111827;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.empty-state {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+  background: rgba(248, 250, 252, 0.84);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.schedule-wrap {
+  padding: 0 18px 18px;
+  overflow-x: auto;
+}
+
+.schedule-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 18px 14px;
+  background: rgba(248, 250, 252, 0.58);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.86);
+}
+
+.schedule-date-control {
+  width: min(340px, 100%);
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 0.96);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.schedule-date-control label {
+  color: var(--blue);
+  font-size: 13px;
+}
+
+.schedule-date-control input {
+  min-height: 48px;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.schedule-table {
+  min-width: 980px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 18px;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+}
+
+.schedule-table th {
+  padding: 13px 14px;
+  color: #64748b;
+  text-align: center;
+  background: rgba(248, 250, 252, 0.96);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.96);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.schedule-table td {
+  height: 70px;
+  min-width: 88px;
+  padding: 12px 14px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.82);
+  border-right: 1px solid rgba(229, 231, 235, 0.7);
+}
+
+.schedule-table td:nth-child(1),
+.schedule-table td:nth-child(2),
+.schedule-table td:nth-child(3),
+.schedule-table td:nth-child(4) {
+  font-weight: 760;
+}
+
+.schedule-table td:last-child,
+.schedule-table th:last-child {
+  border-right: 0;
+}
+
+.schedule-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.schedule-table tbody tr:hover td {
+  background: #fbfdff;
+}
+
+.unavailable-seat {
+  background:
+    linear-gradient(
+      135deg,
+      transparent calc(50% - 1px),
+      rgba(100, 116, 139, 0.42) 50%,
+      transparent calc(50% + 1px)
+    ),
+    rgba(248, 250, 252, 0.74) !important;
+}
+
+.unavailable-seat span {
+  display: block;
+  min-height: 38px;
+}
+
+.schedule-student {
+  min-height: 38px;
+  width: 100%;
+  padding: 6px 10px;
+  color: #111827;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.schedule-student small {
+  display: block;
+  margin-top: 2px;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.schedule-student.low-remaining-student {
+  color: #92400e;
+  background: var(--amber-soft);
+  border: 1px solid rgba(217, 119, 6, 0.45);
+  font-weight: 760;
+}
+
+.schedule-student:hover {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: rgba(37, 99, 235, 0.28);
+}
+
+.court-input {
+  width: 76px;
+  min-height: 36px;
+  padding: 0 10px;
+  color: #111827;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: 0;
+}
+
+.court-input:focus {
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.72);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.notes-panel {
+  margin-top: 18px;
+  padding: 22px 24px;
+}
+
+.schedule-notes {
+  margin: 0 18px 18px;
+  box-shadow: none;
+}
+
+.notes-panel h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.notes-panel ol {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.startup-error {
+  max-width: 760px;
+  margin: 80px auto;
+}
+
+.startup-error pre {
+  overflow-x: auto;
+  padding: 14px;
+  color: var(--danger);
+  background: #fff7f7;
+  border: 1px solid rgba(180, 35, 24, 0.2);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+}
+
+.student-picker {
+  display: grid;
+  gap: 6px;
+  min-width: 210px;
+}
+
+.student-picker label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.student-picker select,
+.student-picker input {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: 0;
+}
+
+.student-picker input:focus {
+  border-color: rgba(37, 99, 235, 0.72);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.student-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  padding: 0;
+}
+
+.detail-card {
+  padding: 16px;
+  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.detail-card h3 {
+  margin: 0 0 14px;
+  font-size: 17px;
+}
+
+.lesson-calendar-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.lesson-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.lesson-editor strong,
+.lesson-editor span {
+  display: block;
+}
+
+.lesson-editor span,
+.helper-text {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.lesson-editor label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lesson-editor input {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.helper-text {
+  margin: 0;
+}
+
+.student-lesson-calendar {
+  display: grid;
+  gap: 14px;
+}
+
+.student-calendar-month h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.student-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.student-calendar-head,
+.student-calendar-day {
+  min-height: 42px;
+  padding: 7px;
+  background: #ffffff;
+}
+
+.student-calendar-head {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  text-align: center;
+  background: #f1f5f9;
+}
+
+.student-calendar-day {
+  color: var(--ink);
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+}
+
+.student-calendar-day.empty {
+  background: #f8fafc;
+  pointer-events: none;
+}
+
+.student-calendar-day span,
+.student-calendar-day strong {
+  display: block;
+}
+
+.student-calendar-day span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.student-calendar-day strong {
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.student-calendar-day.has-lesson {
+  color: #ffffff;
+  background: var(--blue);
+}
+
+.student-calendar-day.has-lesson span {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.student-calendar-day.selected {
+  background: var(--green);
+  box-shadow: inset 0 0 0 2px #ffffff;
+}
+
+.student-calendar-day:hover {
+  background: var(--blue-soft);
+}
+
+.student-calendar-day.has-lesson:hover,
+.student-calendar-day.selected:hover {
+  background: #1d4ed8;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal {
+  width: min(980px, 100%);
+  max-height: min(860px, calc(100vh - 48px));
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-radius: 22px;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+}
+
+.compact-modal {
+  width: min(620px, 100%);
+}
+
+.modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(18px);
+}
+
+.modal .student-detail {
+  padding: 20px;
+}
+
+@media (max-width: 980px) {
+  .summary-grid,
+  .work-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 880px) {
+  .topbar,
+  .form-grid,
+  .compact-form,
+  .hours-form,
+  .filter-bar,
+  .student-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    display: grid;
+    min-height: 0;
+    padding: 26px;
+  }
+
+  .panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tabs {
+    position: static;
+    flex-direction: column;
+    border-radius: var(--radius);
+  }
+
+  .schedule-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tab-button {
+    border-radius: var(--radius-sm);
+  }
+
+  .record {
+    grid-template-columns: 1fr;
+  }
+
+  .record-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .modal-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lesson-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar {
+    grid-template-columns: repeat(7, 118px);
+  }
+}
+
+</style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Tennis Operations</p>
+          <h1>网球课时与工资统计</h1>
+        </div>
+        <div class="month-control">
+          <label for="salary-month">统计月份</label>
+          <input id="salary-month" type="month" />
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="页面模块">
+        <button class="tab-button" data-tab="salary" type="button">
+          教练课时及工资统计
+        </button>
+        <button class="tab-button active" data-tab="monthly" type="button">
+          月卡课课时统计
+        </button>
+      </nav>
+
+      <section id="salary-tab" class="tab-panel">
+        <section class="summary-grid" aria-label="工资汇总">
+          <article class="summary-card">
+            <span>本月工资合计</span>
+            <strong id="total-salary">¥0</strong>
+          </article>
+          <article class="summary-card">
+            <span>月卡课提成</span>
+            <strong id="monthly-commission">¥0</strong>
+          </article>
+          <article class="summary-card">
+            <span>本月结课人数</span>
+            <strong id="completed-students">0</strong>
+          </article>
+        </section>
+
+        <section class="work-grid">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Coach</p>
+                <h2>教练档案</h2>
+              </div>
+            </div>
+            <form id="coach-form" class="form-grid compact-form">
+              <label>
+                教练姓名
+                <input name="name" required placeholder="例如：王教练" />
+              </label>
+              <label>
+                教练等级
+                <select name="level" required>
+                  <option value="junior">初级教练</option>
+                  <option value="middle">中级教练</option>
+                  <option value="senior">高级教练</option>
+                </select>
+              </label>
+              <button type="submit">添加教练</button>
+            </form>
+            <div id="coach-list" class="list-area"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Manual Hours</p>
+                <h2>手动录入课时</h2>
+              </div>
+            </div>
+            <form id="manual-hours-form" class="form-grid hours-form">
+              <label>
+                教练
+                <select name="coachId" id="manual-coach" required></select>
+              </label>
+              <label>
+                私教课时
+                <input name="privateHours" type="number" min="0" step="0.5" value="0" />
+              </label>
+              <label>
+                班课课时
+                <input name="groupHours" type="number" min="0" step="0.5" value="0" />
+              </label>
+              <label>
+                陪打课时
+                <input name="sparringHours" type="number" min="0" step="0.5" value="0" />
+              </label>
+              <button type="submit">保存课时</button>
+            </form>
+          </article>
+        </section>
+
+        <article class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Payroll</p>
+              <h2>本月工资明细</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>教练</th>
+                  <th>等级</th>
+                  <th>私教</th>
+                  <th>班课</th>
+                  <th>陪打</th>
+                  <th>月卡课</th>
+                  <th>工资合计</th>
+              </thead>
+              <tbody id="salary-table"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="monthly-tab" class="tab-panel active">
+        <section class="monthly-stack">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Enrollment</p>
+                <h2>录入月卡课报名</h2>
+              </div>
+            </div>
+            <form id="enrollment-form" class="form-grid">
+              <label>
+                学员姓名
+                <input name="studentName" required placeholder="例如：李同学" />
+              </label>
+              <label>
+                课程类型
+                <select name="courseType" required>
+                  <option value="mwf6">一三五六人班</option>
+                  <option value="tt6">二四六人班</option>
+                  <option value="tt4">二四四人班</option>
+                </select>
+              </label>
+              <label>
+                班级水平
+                <select name="classLevel" required>
+                  <option value="初级班">初级班</option>
+                  <option value="提高班" selected>提高班</option>
+                  <option value="竞赛班">竞赛班</option>
+                </select>
+              </label>
+              <label>
+                上课教练
+                <select name="coachId" id="enrollment-coach" required></select>
+              </label>
+              <label>
+                开课时间
+                <input name="startDate" type="date" required />
+              </label>
+              <label>
+                上课时间
+                <select name="classTime" required>
+                  <option value="7-9">7-9</option>
+                  <option value="9-11">9-11</option>
+                </select>
+              </label>
+              <fieldset class="weekday-field">
+                <legend>上课周期</legend>
+                <div class="weekday-picker">
+                  <label><input name="weekdays" type="checkbox" value="1" checked />周一</label>
+                  <label><input name="weekdays" type="checkbox" value="2" />周二</label>
+                  <label><input name="weekdays" type="checkbox" value="3" checked />周三</label>
+                  <label><input name="weekdays" type="checkbox" value="4" />周四</label>
+                  <label><input name="weekdays" type="checkbox" value="5" checked />周五</label>
+                  <label><input name="weekdays" type="checkbox" value="6" />周六</label>
+                  <label><input name="weekdays" type="checkbox" value="0" />周日</label>
+                </div>
+              </fieldset>
+              <button type="submit">添加报名</button>
+            </form>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="section-label">Daily Schedule</p>
+                <h2>每日课表</h2>
+              </div>
+              <button class="ghost-button" data-open-batch-cancel type="button">批量取消</button>
+            </div>
+            <div class="schedule-toolbar">
+              <div class="student-picker schedule-date-control">
+                <label for="schedule-date">课表日期</label>
+                <input id="schedule-date" type="date" />
+              </div>
+            </div>
+            <div id="daily-schedule" class="schedule-wrap"></div>
+            <section class="notes-panel schedule-notes" aria-label="课程说明">
+              <h2>课程说明</h2>
+              <ol>
+                <li>每个时段的课程 3 人开班，6 人满班。</li>
+                <li>按月计算报课费用，开班当日开始计时，一个月内报课有效；一个月按 4 周计算，有效期内因为俱乐部或天气原因停课可以补课，其他原因不予补课。</li>
+              </ol>
+            </section>
+          </article>
+        </section>
+
+        <article class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Records</p>
+              <h2>月卡课报名记录</h2>
+            </div>
+            <strong id="record-count" class="record-count">0 条</strong>
+          </div>
+          <form id="record-filters" class="filter-bar">
+            <label>
+              学员姓名
+              <input id="filter-student-name" name="studentName" placeholder="输入姓名搜索" />
+            </label>
+            <label>
+              教练名称
+              <select id="filter-coach" name="coachId">
+                <option value="">全部教练</option>
+              </select>
+            </label>
+            <label>
+              课程状态
+              <select id="filter-course-status" name="courseStatus">
+                <option value="">全部状态</option>
+                <option value="未开始">未开始</option>
+                <option value="进行中">进行中</option>
+                <option value="已结课">已结课</option>
+                <option value="停课">停课</option>
+                <option value="退课">退课</option>
+              </select>
+            </label>
+            <label>
+              结算状态
+              <select id="filter-settlement-status" name="settlementStatus">
+                <option value="">全部结算状态</option>
+                <option value="未结算">未结算</option>
+                <option value="已结算">已结算</option>
+              </select>
+            </label>
+            <label>
+              结算月份
+              <input id="filter-settlement-month" name="settlementMonth" type="month" />
+            </label>
+          </form>
+          <div id="enrollment-list" class="list-area"></div>
+        </article>
+      </section>
+    </main>
+
+    <div id="batch-cancel-modal" class="modal-backdrop" hidden>
+      <section class="modal compact-modal" role="dialog" aria-modal="true" aria-labelledby="batch-cancel-title">
+        <div class="modal-header">
+          <div>
+            <p class="section-label">Cancellation</p>
+            <h2 id="batch-cancel-title">批量取消课程</h2>
+          </div>
+          <button class="ghost-button" data-close-batch-cancel type="button">关闭</button>
+        </div>
+        <form id="batch-cancel-form" class="form-grid compact-form">
+          <label>
+            取消日期
+            <input name="cancelDate" type="date" required />
+          </label>
+          <label>
+            取消原因
+            <select name="cancelReason" required>
+              <option value="天气原因">天气原因</option>
+              <option value="法定节假日">法定节假日</option>
+              <option value="俱乐部原因">俱乐部原因</option>
+              <option value="其他">其他</option>
+            </select>
+          </label>
+          <label>
+            备注
+            <input name="cancelNote" placeholder="例如：暴雨、国庆假期" />
+          </label>
+          <button type="submit">取消并顺延</button>
+        </form>
+        <div id="batch-cancel-result" class="operation-result" hidden></div>
+      </section>
+    </div>
+
+    <div id="student-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="student-modal-title">
+        <div class="modal-header">
+          <div>
+            <p class="section-label">Student Detail</p>
+            <h2 id="student-modal-title">学员课程记录</h2>
+          </div>
+          <button class="ghost-button" data-close-modal type="button">关闭</button>
+        </div>
+        <div id="student-detail" class="student-detail"></div>
+      </section>
+    </div>
+
+    <script type="application/json" id="seed-data">
+{
+  "importedAt": "empty-public-seed",
+  "coaches": [],
+  "enrollments": [],
+  "manualHours": {},
+  "cancellations": []
+}
+
+</script>
+<script>
+const storageKey = "tennis-payroll-app-v1";
+const cloudStateEndpoint = "/api/tennis-state";
+
+const coachLevels = {
+  junior: {
+    label: "初级教练",
+    privateRate: 100,
+    groupRate: 100,
+    sparringRate: 50,
+  },
+  middle: {
+    label: "中级教练",
+    privateRate: 115,
+    groupRate: 115,
+    sparringRate: 75,
+  },
+  senior: {
+    label: "高级教练",
+    privateRate: 130,
+    groupRate: 130,
+    sparringRate: 100,
+  },
+};
+
+const courseTypes = {
+  mwf6: {
+    label: "一三五六人班",
+    commission: 400,
+    defaultPattern: "1,3,5",
+    totalLessons: 12,
+  },
+  tt6: {
+    label: "二四六人班",
+    commission: 325,
+    defaultPattern: "2,4",
+    totalLessons: 8,
+  },
+  tt4: {
+    label: "二四四人班",
+    commission: 500,
+    defaultPattern: "2,4",
+    totalLessons: 8,
+  },
+};
+
+const classTimes = ["7-9", "9-11"];
+const classLevels = ["初级班", "提高班", "竞赛班"];
+const courseStatuses = ["未开始", "进行中", "已结课", "停课", "退课"];
+const settlementStatuses = ["未结算", "已结算"];
+const weekdays = [
+  ["1", "周一"],
+  ["2", "周二"],
+  ["3", "周三"],
+  ["4", "周四"],
+  ["5", "周五"],
+  ["6", "周六"],
+  ["0", "周日"],
+];
+
+let state = {
+  importedAt: "",
+  coaches: [],
+  enrollments: [],
+  manualHours: {},
+};
+
+let selectedEnrollmentId = "";
+let isStudentModalOpen = false;
+let selectedLessonIndex = 0;
+let cloudSaveTimer = 0;
+let cloudSyncEnabled = false;
+let isHydratingState = true;
+
+const currency = new Intl.NumberFormat("zh-CN", {
+  style: "currency",
+  currency: "CNY",
+  maximumFractionDigits: 0,
+});
+
+const todayMonth = () => new Date().toISOString().slice(0, 7);
+const toNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
+
+const dateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseDate = (value) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const monthBounds = (monthValue) => {
+  const [year, month] = monthValue.split("-").map(Number);
+  return {
+    start: new Date(year, month - 1, 1),
+    end: new Date(year, month, 0),
+  };
+};
+
+const readSavedState = () => {
+  try {
+    return localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+};
+
+const writeSavedState = () => {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch {
+    // Some browsers restrict localStorage for file:// pages. Keep the page usable.
+  }
+};
+
+const readCloudState = async () => {
+  try {
+    const response = await fetch(`${cloudStateEndpoint}?v=${Date.now()}`);
+    if (!response.ok) return null;
+
+    const payload = await response.json();
+    cloudSyncEnabled = Boolean(payload.configured);
+    return payload.state && typeof payload.state === "object" ? payload.state : null;
+  } catch {
+    cloudSyncEnabled = false;
+    return null;
+  }
+};
+
+const writeCloudState = () => {
+  if (!cloudSyncEnabled || isHydratingState) return;
+
+  window.clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = window.setTimeout(async () => {
+    try {
+      await fetch(cloudStateEndpoint, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ state }),
+      });
+    } catch {
+      // Local storage remains the fallback if cloud sync is temporarily unavailable.
+    }
+  }, 500);
+};
+
+const applySeedData = (data, saved) => {
+  const hasNewImport = data.importedAt && data.importedAt !== state.importedAt;
+  const shouldSeed = !saved || hasNewImport;
+
+  if (!shouldSeed) return;
+  if (data.importedAt) state.importedAt = data.importedAt;
+  if (Array.isArray(data.coaches)) state.coaches = data.coaches;
+  if (Array.isArray(data.enrollments)) state.enrollments = data.enrollments;
+  if (data.manualHours) state.manualHours = data.manualHours;
+  if (data.monthlyManualHours) state.manualHours = data.monthlyManualHours;
+  saveState();
+};
+
+const loadState = async () => {
+  const saved = readSavedState();
+  if (saved) {
+    try {
+      state = { ...state, ...JSON.parse(saved) };
+    } catch {
+      state.importedAt = "";
+    }
+  }
+
+  const cloudState = await readCloudState();
+  if (cloudState) {
+    state = { ...state, ...cloudState };
+    writeSavedState();
+    return;
+  }
+
+  const embeddedSeed = document.querySelector("#seed-data");
+  if (embeddedSeed?.textContent) {
+    try {
+      applySeedData(JSON.parse(embeddedSeed.textContent), saved);
+      return;
+    } catch {
+      // Fall back to loading the adjacent JSON file.
+    }
+  }
+
+  try {
+    const response = await fetch(`./tennis-data-2026-07-05.json?v=${Date.now()}`);
+    if (!response.ok) return;
+    const data = await response.json();
+    applySeedData(data, saved);
+  } catch {
+    // The page still works without the seed JSON file.
+  }
+};
+
+const saveState = () => {
+  writeSavedState();
+  writeCloudState();
+};
+
+const getCoach = (coachId) =>
+  state.coaches.find((coach) => coach.id === coachId);
+
+const getEnrollment = (enrollmentId) =>
+  state.enrollments.find((enrollment) => enrollment.id === enrollmentId);
+
+const getEnrollmentCreatedAt = (enrollment) => {
+  const timestamp = String(enrollment.id || "").match(/\d+/)?.[0];
+  return timestamp ? Number(timestamp) : 0;
+};
+
+const getClassTime = (enrollment) =>
+  classTimes.includes(enrollment.classTime) ? enrollment.classTime : "7-9";
+
+const getClassLevel = (enrollment) =>
+  classLevels.includes(enrollment.classLevel) ? enrollment.classLevel : "提高班";
+
+const getCourseStatus = (enrollment) => {
+  if (["停课", "退课"].includes(enrollment.status)) return enrollment.status;
+
+  const today = dateKey(new Date());
+  const start = enrollment.startDate;
+  const completion = getCompletionDate(enrollment);
+
+  if (start && today < start) return "未开始";
+  if (completion && today > completion) return "已结课";
+  return "进行中";
+};
+
+const getSettlementStatus = (enrollment) =>
+  settlementStatuses.includes(enrollment.settlementStatus)
+    ? enrollment.settlementStatus
+    : "未结算";
+
+const getSettlementMonth = (enrollment) => getCompletionDate(enrollment).slice(0, 7);
+
+const escapeAttribute = (value) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+
+const isInactiveCourse = (enrollment) =>
+  ["停课", "退课"].includes(getCourseStatus(enrollment));
+
+const getRemainingLessonCount = (enrollment) => {
+  const today = dateKey(new Date());
+
+  return getClassDates(enrollment).filter((date) => date >= today).length;
+};
+
+const shouldHighlightLowRemaining = (enrollment) => {
+  const status = getCourseStatus(enrollment);
+
+  if (["未开始", "已结课", "停课", "退课"].includes(status)) return false;
+  return getRemainingLessonCount(enrollment) < 2;
+};
+
+const normalizeWeekdayPattern = (pattern) =>
+  (pattern || "")
+    .split(",")
+    .filter((value) => value !== "")
+    .sort((a, b) => Number(a) - Number(b))
+    .join(",");
+
+const getWeekdayPatternFromForm = (form, fallback) => {
+  const selected = form.getAll("weekdays");
+  return selected.length
+    ? normalizeWeekdayPattern(selected.join(","))
+    : normalizeWeekdayPattern(fallback);
+};
+
+const renderWeekdayPicker = (pattern) => {
+  const selected = new Set((pattern || "").split(","));
+
+  return `
+    <fieldset class="weekday-field">
+      <legend>上课周期</legend>
+      <div class="weekday-picker">
+        ${weekdays
+          .map(([value, label]) => {
+            const checked = selected.has(value) ? "checked" : "";
+            return `<label><input name="weekdays" type="checkbox" value="${value}" ${checked} />${label}</label>`;
+          })
+          .join("")}
+      </div>
+    </fieldset>
+  `;
+};
+
+const setWeekdayCheckboxes = (container, pattern) => {
+  const selected = new Set((pattern || "").split(","));
+
+  container.querySelectorAll('[name="weekdays"]').forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+};
+
+const emptyState = (title, text) => `
+  <div class="empty-state">
+    <div>
+      <strong>${title}</strong>
+      <p>${text}</p>
+    </div>
+  </div>
+`;
+
+const getClassDates = (enrollment) => {
+  if (Array.isArray(enrollment.customClassDates) && enrollment.customClassDates.length) {
+    return [...enrollment.customClassDates].sort();
+  }
+
+  const start = parseDate(enrollment.startDate);
+  const weekdays = enrollment.weekdayPattern.split(",").map(Number);
+  const skippedDates = new Set(enrollment.skippedDates || []);
+  const totalLessons =
+    toNumber(enrollment.totalLessons) ||
+    courseTypes[enrollment.courseType]?.totalLessons ||
+    weekdays.length * 4;
+  const dates = [];
+
+  for (
+    let day = new Date(start), guard = 0;
+    dates.length < totalLessons && guard < 120;
+    day = addDays(day, 1), guard += 1
+  ) {
+    const key = dateKey(day);
+    if (weekdays.includes(day.getDay()) && !skippedDates.has(key)) {
+      dates.push(key);
+    }
+  }
+
+  return dates;
+};
+
+const getNextAvailableClassDate = (enrollment, afterDate, existingDates) => {
+  const pattern = normalizeWeekdayPattern(
+    enrollment.weekdayPattern || courseTypes[enrollment.courseType]?.defaultPattern
+  );
+  const weekdaySet = new Set(pattern.split(",").map(Number));
+  const blockedDates = new Set([
+    ...(enrollment.skippedDates || []),
+    ...existingDates,
+  ]);
+
+  for (
+    let day = addDays(parseDate(afterDate), 1), guard = 0;
+    guard < 180;
+    day = addDays(day, 1), guard += 1
+  ) {
+    const key = dateKey(day);
+    if (weekdaySet.has(day.getDay()) && !blockedDates.has(key)) {
+      return key;
+    }
+  }
+
+  return afterDate;
+};
+
+const cancelEnrollmentLesson = (enrollment, cancelDate) => {
+  const currentDates = getClassDates(enrollment);
+  if (!currentDates.includes(cancelDate)) return false;
+
+  enrollment.skippedDates = Array.from(
+    new Set([...(enrollment.skippedDates || []), cancelDate])
+  ).sort();
+
+  if (Array.isArray(enrollment.customClassDates) && enrollment.customClassDates.length) {
+    const remainingDates = currentDates.filter((date) => date !== cancelDate);
+    const nextDate = getNextAvailableClassDate(
+      enrollment,
+      remainingDates[remainingDates.length - 1] || cancelDate,
+      remainingDates
+    );
+    enrollment.customClassDates = [...remainingDates, nextDate].sort();
+  }
+
+  enrollment.settlementMonth = getSettlementMonth(enrollment);
+  return true;
+};
+
+const getCompletionDate = (enrollment) => {
+  const dates = getClassDates(enrollment);
+  return dates[dates.length - 1] || enrollment.expectedCompletionDate || enrollment.startDate;
+};
+
+const getMonthCardCommissionByCoach = (monthValue) => {
+  const { start, end } = monthBounds(monthValue);
+  const result = {};
+
+  state.enrollments.forEach((enrollment) => {
+    if (isInactiveCourse(enrollment)) return;
+
+    const completion = parseDate(getCompletionDate(enrollment));
+    if (completion < start || completion > end) return;
+
+    const course = courseTypes[enrollment.courseType];
+    const commission = toNumber(enrollment.commission) || course.commission;
+    result[enrollment.coachId] =
+      (result[enrollment.coachId] || 0) + commission;
+  });
+
+  return result;
+};
+
+const renderStudentLessonCalendar = (dates) => {
+  if (!dates.length) {
+    return emptyState("暂无上课日期", "保存学员信息后会根据开课时间和周期生成课程记录。");
+  }
+
+  const dateToLesson = new Map(dates.map((date, index) => [date, index]));
+  const first = parseDate(dates[0]);
+  const last = parseDate(dates[dates.length - 1]);
+  const months = [];
+
+  for (
+    let cursor = new Date(first.getFullYear(), first.getMonth(), 1);
+    cursor <= last;
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+  ) {
+    months.push(new Date(cursor));
+  }
+
+  return months
+    .map((monthDate) => {
+      const monthValue = dateKey(monthDate).slice(0, 7);
+      const { start, end } = monthBounds(monthValue);
+      const weekNames = ["日", "一", "二", "三", "四", "五", "六"];
+      const cells = weekNames.map(
+        (name) => `<div class="student-calendar-head">周${name}</div>`
+      );
+
+      for (let i = 0; i < start.getDay(); i += 1) {
+        cells.push('<div class="student-calendar-day empty"></div>');
+      }
+
+      for (let day = new Date(start); day <= end; day = addDays(day, 1)) {
+        const key = dateKey(day);
+        const lessonIndex = dateToLesson.get(key);
+        const hasLesson = lessonIndex !== undefined;
+        const selected = lessonIndex === selectedLessonIndex;
+
+        cells.push(`
+          <button
+            class="student-calendar-day ${hasLesson ? "has-lesson" : ""} ${selected ? "selected" : ""}"
+            data-calendar-date="${key}"
+            ${hasLesson ? `data-select-lesson-index="${lessonIndex}"` : ""}
+            type="button"
+          >
+            <span>${day.getDate()}</span>
+            ${hasLesson ? `<strong>第 ${lessonIndex + 1} 次</strong>` : ""}
+          </button>
+        `);
+      }
+
+      return `
+        <section class="student-calendar-month">
+          <h4>${monthDate.getFullYear()} 年 ${monthDate.getMonth() + 1} 月</h4>
+          <div class="student-calendar-grid">${cells.join("")}</div>
+        </section>
+      `;
+    })
+    .join("");
+};
+
+const updateCoachOptions = () => {
+  const options = state.coaches
+    .map((coach) => `<option value="${coach.id}">${coach.name}</option>`)
+    .join("");
+  document.querySelector("#manual-coach").innerHTML = options;
+  document.querySelector("#enrollment-coach").innerHTML = options;
+
+  const filter = document.querySelector("#filter-coach");
+  if (filter) {
+    const selected = filter.value;
+    filter.innerHTML = `<option value="">全部教练</option>${options}`;
+    filter.value = selected;
+  }
+};
+
+const openStudentModal = (enrollmentId) => {
+  selectedEnrollmentId = enrollmentId;
+  selectedLessonIndex = 0;
+  isStudentModalOpen = true;
+  render();
+};
+
+const closeStudentModal = () => {
+  isStudentModalOpen = false;
+  render();
+};
+
+const getFirstAvailableLessonDate = () => {
+  const today = dateKey(new Date());
+  const dates = state.enrollments.flatMap(getClassDates).sort();
+
+  return dates.find((date) => date >= today) || dates[0] || today;
+};
+
+const renderCoaches = () => {
+  const target = document.querySelector("#coach-list");
+
+  if (!state.coaches.length) {
+    target.innerHTML = emptyState("暂无教练", "请先添加教练，再录入课时和报名。");
+    return;
+  }
+
+  target.innerHTML = state.coaches
+    .map((coach) => {
+      const level = coachLevels[coach.level];
+      return `
+        <div class="record">
+          <div>
+            <strong>${coach.name}</strong>
+            <small>${level.label} · 私教/班课 ${level.privateRate} 元/小时 · 陪打 ${level.sparringRate} 元/小时</small>
+          </div>
+          <div class="record-actions">
+            <button class="danger-button" data-delete-coach="${coach.id}" type="button">删除</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+};
+
+const renderSalary = () => {
+  const monthValue = document.querySelector("#salary-month").value;
+  const monthHours = state.manualHours[monthValue] || {};
+  const monthlyCardCommission = getMonthCardCommissionByCoach(monthValue);
+  const completedCount = state.enrollments.filter((enrollment) => {
+    if (isInactiveCourse(enrollment)) return false;
+
+    const { start, end } = monthBounds(monthValue);
+    const completion = parseDate(getCompletionDate(enrollment));
+    return completion >= start && completion <= end;
+  }).length;
+
+  let salaryTotal = 0;
+  let cardTotal = 0;
+
+  document.querySelector("#salary-table").innerHTML = state.coaches
+    .map((coach) => {
+      const level = coachLevels[coach.level];
+      const hours = monthHours[coach.id] || {};
+      const privateHours = toNumber(hours.privateHours);
+      const groupHours = toNumber(hours.groupHours);
+      const sparringHours = toNumber(hours.sparringHours);
+      const cardCommission = monthlyCardCommission[coach.id] || 0;
+      const manualTotal =
+        privateHours * level.privateRate +
+        groupHours * level.groupRate +
+        sparringHours * level.sparringRate;
+      const total = manualTotal + cardCommission;
+
+      salaryTotal += total;
+      cardTotal += cardCommission;
+
+      return `
+        <tr>
+          <td>${coach.name}</td>
+          <td>${level.label}</td>
+          <td>${privateHours} 小时 / ${currency.format(privateHours * level.privateRate)}</td>
+          <td>${groupHours} 小时 / ${currency.format(groupHours * level.groupRate)}</td>
+          <td>${sparringHours} 小时 / ${currency.format(sparringHours * level.sparringRate)}</td>
+          <td>${currency.format(cardCommission)}</td>
+          <td><strong>${currency.format(total)}</strong></td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  document.querySelector("#total-salary").textContent = currency.format(salaryTotal);
+  document.querySelector("#monthly-commission").textContent = currency.format(cardTotal);
+  document.querySelector("#completed-students").textContent = completedCount;
+};
+
+const renderEnrollments = () => {
+  const target = document.querySelector("#enrollment-list");
+  const countTarget = document.querySelector("#record-count");
+
+  if (!state.enrollments.length) {
+    if (countTarget) countTarget.textContent = "0 条";
+    target.innerHTML = emptyState(
+      "暂无报名记录",
+      "录入报名后，系统会自动生成结课日期和上课日历。"
+    );
+    return;
+  }
+
+  const filters = {
+    studentName:
+      document.querySelector("#filter-student-name")?.value.trim() || "",
+    coachId: document.querySelector("#filter-coach")?.value || "",
+    courseStatus: document.querySelector("#filter-course-status")?.value || "",
+    settlementStatus:
+      document.querySelector("#filter-settlement-status")?.value || "",
+    settlementMonth:
+      document.querySelector("#filter-settlement-month")?.value || "",
+  };
+  const filtered = state.enrollments
+    .filter((enrollment) => {
+      if (
+        filters.studentName &&
+        !enrollment.studentName.includes(filters.studentName)
+      ) {
+        return false;
+      }
+      if (filters.coachId && enrollment.coachId !== filters.coachId) return false;
+      if (filters.courseStatus && getCourseStatus(enrollment) !== filters.courseStatus) {
+        return false;
+      }
+      if (
+        filters.settlementStatus &&
+        getSettlementStatus(enrollment) !== filters.settlementStatus
+      ) {
+        return false;
+      }
+      if (
+        filters.settlementMonth &&
+        getSettlementMonth(enrollment) !== filters.settlementMonth
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const dateDiff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      if (dateDiff) return dateDiff;
+      return getEnrollmentCreatedAt(b) - getEnrollmentCreatedAt(a);
+    });
+
+  if (countTarget) {
+    countTarget.textContent = `${filtered.length} / ${state.enrollments.length} 条`;
+  }
+
+  if (!filtered.length) {
+    target.innerHTML = emptyState("没有匹配记录", "调整筛选条件后会显示对应报名记录。");
+    return;
+  }
+
+  target.innerHTML = filtered
+    .map((enrollment) => {
+      const coach = getCoach(enrollment.coachId);
+      const course = courseTypes[enrollment.courseType];
+      const courseName = enrollment.courseName || course.label;
+      const classLevel = getClassLevel(enrollment);
+      const commission = toNumber(enrollment.commission) || course.commission;
+      const dates = getClassDates(enrollment);
+      const completion = getCompletionDate(enrollment);
+      const remaining = getRemainingLessonCount(enrollment);
+      const lowRemaining = shouldHighlightLowRemaining(enrollment);
+      const status = getCourseStatus(enrollment);
+      const settlementStatus = getSettlementStatus(enrollment);
+      const settlementMonth = getSettlementMonth(enrollment) || "未设置";
+
+      return `
+        <div class="record ${enrollment.id === selectedEnrollmentId ? "selected" : ""} ${lowRemaining ? "low-remaining" : ""}">
+          <div>
+            <strong>${enrollment.studentName} · ${courseName}</strong>
+            <small>${coach?.name || "未指定教练"} · ${classLevel} · ${getClassTime(enrollment)} · 开课 ${enrollment.startDate} · 结课 ${completion} · 剩余 ${remaining} 次 · 共 ${dates.length} 次课 · ${status} · ${settlementStatus} · 结算月份 ${settlementMonth} · 提成 ${currency.format(commission)}</small>
+            ${lowRemaining ? '<span class="warning-text">剩余不足 2 次，请关注续课或结课核对</span>' : ""}
+          </div>
+          <div class="record-actions">
+            <span class="pill">${completion}</span>
+            <button class="ghost-button" data-open-enrollment="${enrollment.id}" type="button">查看/编辑</button>
+            <button class="danger-button" data-delete-enrollment="${enrollment.id}" type="button">删除</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+};
+
+const getLessonsForDate = (targetDate) =>
+  state.enrollments
+    .filter((enrollment) => !isInactiveCourse(enrollment))
+    .filter((enrollment) => getClassDates(enrollment).includes(targetDate));
+
+const renderDailySchedule = () => {
+  const target = document.querySelector("#daily-schedule");
+  const scheduleDate = document.querySelector("#schedule-date").value;
+  const lessons = getLessonsForDate(scheduleDate);
+
+  if (!lessons.length) {
+    target.innerHTML = emptyState(
+      "当天暂无课程",
+      "选择其他日期，或检查学员弹窗中的上课日期是否已经排入当天。"
+    );
+    return;
+  }
+
+  const grouped = new Map();
+
+  lessons.forEach((enrollment) => {
+    const key = [
+      getClassTime(enrollment),
+      enrollment.courseType,
+      getClassLevel(enrollment),
+      enrollment.coachId,
+      enrollment.court || "未排",
+    ].join("|");
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        classTime: getClassTime(enrollment),
+        classLevel: getClassLevel(enrollment),
+        courseType: enrollment.courseType,
+        coachId: enrollment.coachId,
+        court: enrollment.court || "未排",
+        students: [],
+      });
+    }
+
+    grouped.get(key).students.push(enrollment);
+  });
+
+  const rows = [...grouped.values()]
+    .sort((a, b) => {
+      const timeOrder = classTimes.indexOf(a.classTime) - classTimes.indexOf(b.classTime);
+      if (timeOrder !== 0) return timeOrder;
+      return (getCoach(a.coachId)?.name || "").localeCompare(getCoach(b.coachId)?.name || "zh");
+    })
+    .map((group) => {
+      const coach = getCoach(group.coachId);
+      const className = group.classLevel;
+      const capacity = group.courseType === "tt4" ? 4 : 6;
+      const enrollmentIds = group.students.map((student) => student.id).join(",");
+      const studentCells = Array.from({ length: 6 }, (_, index) => {
+        const student = group.students[index];
+        const lowRemaining = student && shouldHighlightLowRemaining(student);
+        if (index >= capacity) {
+          return '<td class="unavailable-seat"><span aria-label="无座位"></span></td>';
+        }
+
+        return student
+          ? `<td><button class="schedule-student ${lowRemaining ? "low-remaining-student" : ""}" data-open-enrollment="${student.id}" type="button">${student.studentName}${lowRemaining ? "<small>余&lt;2</small>" : ""}</button></td>`
+          : "<td></td>";
+      }).join("");
+
+      return `
+        <tr>
+          <td>${group.classTime}</td>
+          <td>${className}</td>
+          <td>${coach?.name || "未指定"}</td>
+          <td>
+            <input
+              class="court-input"
+              data-court-enrollments="${enrollmentIds}"
+              value="${escapeAttribute(group.court === "未排" ? "" : group.court)}"
+              placeholder="未排"
+              aria-label="编辑场地号"
+            />
+          </td>
+          ${studentCells}
+        </tr>
+      `;
+    })
+    .join("");
+
+  target.innerHTML = `
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>班型</th>
+          <th>带课教练</th>
+          <th>场地</th>
+          <th>1</th>
+          <th>2</th>
+          <th>3</th>
+          <th>4</th>
+          <th>5</th>
+          <th>6</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+};
+
+const renderStudentDetail = () => {
+  const target = document.querySelector("#student-detail");
+  const modal = document.querySelector("#student-modal");
+  const enrollment = getEnrollment(selectedEnrollmentId);
+
+  modal.hidden = !isStudentModalOpen;
+
+  if (!isStudentModalOpen || !enrollment) {
+    target.innerHTML = emptyState(
+      "请选择学员",
+      "在报名记录中点击“查看/编辑”后，可以核对每节课日期并修改资料。"
+    );
+    return;
+  }
+
+  document.querySelector("#student-modal-title").textContent =
+    `${enrollment.studentName} · 课程记录`;
+
+  const courseOptions = Object.entries(courseTypes)
+    .map(([value, course]) => {
+      const selected = value === enrollment.courseType ? "selected" : "";
+      return `<option value="${value}" ${selected}>${course.label}</option>`;
+    })
+    .join("");
+  const classLevelOptions = classLevels
+    .map((level) => {
+      const selected = level === getClassLevel(enrollment) ? "selected" : "";
+      return `<option value="${level}" ${selected}>${level}</option>`;
+    })
+    .join("");
+  const settlementStatusOptions = settlementStatuses
+    .map((status) => {
+      const selected =
+        status === getSettlementStatus(enrollment) ? "selected" : "";
+      return `<option value="${status}" ${selected}>${status}</option>`;
+    })
+    .join("");
+  const coachOptions = state.coaches
+    .map((coach) => {
+      const selected = coach.id === enrollment.coachId ? "selected" : "";
+      return `<option value="${coach.id}" ${selected}>${coach.name}</option>`;
+    })
+    .join("");
+  const dates = getClassDates(enrollment);
+  const courseStatus = getCourseStatus(enrollment);
+  const settlementMonth = getSettlementMonth(enrollment);
+  if (selectedLessonIndex >= dates.length) {
+    selectedLessonIndex = Math.max(dates.length - 1, 0);
+  }
+  const selectedLessonDate = dates[selectedLessonIndex] || "";
+
+  target.innerHTML = `
+    <form id="student-edit-form" class="detail-card form-grid">
+      <h3>学员信息</h3>
+      <label>
+        学员姓名
+        <input name="studentName" required value="${enrollment.studentName}" />
+      </label>
+      <label>
+        课程类型
+        <select name="courseType" required>${courseOptions}</select>
+      </label>
+      <label>
+        班级水平
+        <select name="classLevel" required>${classLevelOptions}</select>
+      </label>
+      <label>
+        上课教练
+        <select name="coachId" required>${coachOptions}</select>
+      </label>
+      <label>
+        开课时间
+        <input name="startDate" type="date" required value="${enrollment.startDate}" />
+      </label>
+      <label>
+        上课时间
+        <select name="classTime" required>
+          <option value="7-9" ${getClassTime(enrollment) === "7-9" ? "selected" : ""}>7-9</option>
+          <option value="9-11" ${getClassTime(enrollment) === "9-11" ? "selected" : ""}>9-11</option>
+        </select>
+      </label>
+      ${renderWeekdayPicker(enrollment.weekdayPattern)}
+      <label>
+        总课次
+        <input name="totalLessons" type="number" min="1" step="1" value="${toNumber(enrollment.totalLessons) || dates.length}" />
+      </label>
+      <label>
+        课程状态
+        <span class="readonly-field">${courseStatus}</span>
+      </label>
+      <label>
+        结算状态
+        <select name="settlementStatus">${settlementStatusOptions}</select>
+      </label>
+      <label>
+        结算月份
+        <span class="readonly-field">${settlementMonth}</span>
+      </label>
+      <button type="submit">保存学员信息</button>
+    </form>
+
+    <form id="lesson-dates-form" class="detail-card lesson-calendar-card">
+      <h3>上课记录</h3>
+      <div class="lesson-editor">
+        <div>
+          <strong>第 ${selectedLessonIndex + 1} 次课</strong>
+          <span>${selectedLessonDate || "未生成日期"}</span>
+        </div>
+        <label>
+          修改为
+          <input id="selected-lesson-date" name="selectedLessonDate" type="date" value="${selectedLessonDate}" />
+        </label>
+        <button type="submit">保存本次日期</button>
+      </div>
+      <p class="helper-text">点亮的日期是已排课程。先点某一次课，再点目标日期即可调整这次课。</p>
+      <div class="student-lesson-calendar">
+        ${renderStudentLessonCalendar(dates)}
+      </div>
+    </form>
+  `;
+};
+
+const renderManualForm = () => {
+  const monthValue = document.querySelector("#salary-month").value;
+  const coachId = document.querySelector("#manual-coach").value;
+  const hours = state.manualHours[monthValue]?.[coachId] || {};
+
+  document.querySelector('[name="privateHours"]').value =
+    hours.privateHours ?? 0;
+  document.querySelector('[name="groupHours"]').value = hours.groupHours ?? 0;
+  document.querySelector('[name="sparringHours"]').value =
+    hours.sparringHours ?? 0;
+};
+
+const render = () => {
+  updateCoachOptions();
+  renderCoaches();
+  renderManualForm();
+  renderSalary();
+  renderEnrollments();
+  renderDailySchedule();
+  renderStudentDetail();
+};
+
+const bindEvents = () => {
+  document.querySelectorAll(".tab-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      document
+        .querySelectorAll(".tab-button")
+        .forEach((item) => item.classList.remove("active"));
+      document
+        .querySelectorAll(".tab-panel")
+        .forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      document
+        .querySelector(`#${button.dataset.tab}-tab`)
+        .classList.add("active");
+    });
+  });
+
+  document.querySelector("#salary-month").addEventListener("change", render);
+  document.querySelector("#manual-coach").addEventListener("change", renderManualForm);
+  document.querySelector("#schedule-date").addEventListener("change", renderDailySchedule);
+  document.querySelector("#record-filters").addEventListener("change", renderEnrollments);
+  document.querySelector("#record-filters").addEventListener("input", renderEnrollments);
+
+  document
+    .querySelector("#batch-cancel-form")
+    .addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const cancelDate = form.get("cancelDate");
+      const reason = form.get("cancelReason");
+      const note = form.get("cancelNote").trim();
+      const affected = [];
+
+      state.enrollments.forEach((enrollment) => {
+        if (isInactiveCourse(enrollment)) return;
+        if (cancelEnrollmentLesson(enrollment, cancelDate)) {
+          affected.push(enrollment);
+        }
+      });
+
+      state.cancellations = state.cancellations || [];
+      state.cancellations.push({
+        id: `cancel-${Date.now()}`,
+        date: cancelDate,
+        reason,
+        note,
+        affectedEnrollmentIds: affected.map((enrollment) => enrollment.id),
+        createdAt: new Date().toISOString(),
+      });
+
+      saveState();
+      const result = document.querySelector("#batch-cancel-result");
+      result.hidden = false;
+      result.textContent = affected.length
+        ? `已取消 ${cancelDate} 的 ${affected.length} 节学员课程，并自动顺延。原因：${reason}${note ? `（${note}）` : ""}`
+        : `${cancelDate} 没有可取消的月卡课记录。`;
+      event.currentTarget.reset();
+      document.querySelector("#schedule-date").value = cancelDate;
+      render();
+      result.hidden = false;
+    });
+
+  document.querySelector("#coach-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    state.coaches.push({
+      id: `coach-${Date.now()}`,
+      name: form.get("name").trim(),
+      level: form.get("level"),
+    });
+    event.currentTarget.reset();
+    saveState();
+    render();
+  });
+
+  document
+    .querySelector("#manual-hours-form")
+    .addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const monthValue = document.querySelector("#salary-month").value;
+      const coachId = form.get("coachId");
+
+      state.manualHours[monthValue] = state.manualHours[monthValue] || {};
+      state.manualHours[monthValue][coachId] = {
+        privateHours: toNumber(form.get("privateHours")),
+        groupHours: toNumber(form.get("groupHours")),
+        sparringHours: toNumber(form.get("sparringHours")),
+      };
+
+      saveState();
+      render();
+    });
+
+  document
+    .querySelector("#enrollment-form")
+    .addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const courseType = form.get("courseType");
+
+      state.enrollments.push({
+        id: `enrollment-${Date.now()}`,
+        studentName: form.get("studentName").trim(),
+        courseType,
+        classLevel: form.get("classLevel"),
+        courseName: courseTypes[courseType].label,
+        commission: courseTypes[courseType].commission,
+        coachId: form.get("coachId"),
+        startDate: form.get("startDate"),
+        classTime: form.get("classTime"),
+        settlementStatus: "未结算",
+        settlementMonth: "",
+        totalLessons: courseTypes[courseType].totalLessons,
+        weekdayPattern: getWeekdayPatternFromForm(
+          form,
+          courseTypes[courseType].defaultPattern
+        ),
+      });
+
+      event.currentTarget.reset();
+      saveState();
+      render();
+    });
+
+  document.body.addEventListener("click", (event) => {
+    const actionTarget = event.target.closest(
+      "[data-delete-coach], [data-delete-enrollment], [data-select-enrollment], [data-open-enrollment], [data-close-modal], [data-open-batch-cancel], [data-close-batch-cancel], [data-select-lesson-index], [data-calendar-date]"
+    );
+    const dataset = actionTarget?.dataset || {};
+    const coachId = dataset.deleteCoach;
+    const enrollmentId = dataset.deleteEnrollment;
+    const selectedId = dataset.selectEnrollment;
+    const openId = dataset.openEnrollment;
+    const shouldCloseModal =
+      dataset.closeModal !== undefined ||
+      event.target.id === "student-modal";
+    const shouldOpenBatchCancel = dataset.openBatchCancel !== undefined;
+    const shouldCloseBatchCancel =
+      dataset.closeBatchCancel !== undefined ||
+      event.target.id === "batch-cancel-modal";
+
+    if (coachId) {
+      state.coaches = state.coaches.filter((coach) => coach.id !== coachId);
+      state.enrollments = state.enrollments.filter(
+        (enrollment) => enrollment.coachId !== coachId
+      );
+      saveState();
+      render();
+    }
+
+    if (enrollmentId) {
+      const wasSelected = selectedEnrollmentId === enrollmentId;
+      state.enrollments = state.enrollments.filter(
+        (enrollment) => enrollment.id !== enrollmentId
+      );
+      if (wasSelected) {
+        selectedEnrollmentId = "";
+        isStudentModalOpen = false;
+      }
+      saveState();
+      render();
+    }
+
+    if (selectedId) {
+      selectedEnrollmentId = selectedId;
+      render();
+    }
+
+    if (openId) {
+      openStudentModal(openId);
+    }
+
+    if (shouldCloseModal) {
+      closeStudentModal();
+    }
+
+    if (shouldOpenBatchCancel) {
+      document.querySelector("#batch-cancel-modal").hidden = false;
+    }
+
+    if (shouldCloseBatchCancel) {
+      document.querySelector("#batch-cancel-modal").hidden = true;
+    }
+
+    if (dataset.selectLessonIndex !== undefined) {
+      selectedLessonIndex = Number(dataset.selectLessonIndex);
+      renderStudentDetail();
+    }
+
+    if (
+      dataset.calendarDate &&
+      dataset.selectLessonIndex === undefined &&
+      isStudentModalOpen
+    ) {
+      const enrollment = getEnrollment(selectedEnrollmentId);
+      if (!enrollment) return;
+
+      enrollment.customClassDates = getClassDates(enrollment).map((date, index) =>
+        index === selectedLessonIndex ? dataset.calendarDate : date
+      );
+      saveState();
+      render();
+    }
+
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && isStudentModalOpen) {
+      closeStudentModal();
+    }
+    if (event.key === "Escape") {
+      document.querySelector("#batch-cancel-modal").hidden = true;
+    }
+  });
+
+  document.body.addEventListener("submit", (event) => {
+    if (event.target.id === "student-edit-form") {
+      event.preventDefault();
+      const enrollment = getEnrollment(selectedEnrollmentId);
+      if (!enrollment) return;
+
+      const form = new FormData(event.target);
+      const courseType = form.get("courseType");
+      const courseChanged = enrollment.courseType !== courseType;
+
+      enrollment.studentName = form.get("studentName").trim();
+      enrollment.courseType = courseType;
+      enrollment.classLevel = form.get("classLevel");
+      enrollment.courseName = courseTypes[courseType].label;
+      enrollment.commission = courseTypes[courseType].commission;
+      enrollment.coachId = form.get("coachId");
+      enrollment.startDate = form.get("startDate");
+      enrollment.classTime = form.get("classTime");
+      enrollment.weekdayPattern = getWeekdayPatternFromForm(
+        form,
+        courseTypes[courseType].defaultPattern
+      );
+      enrollment.totalLessons = toNumber(form.get("totalLessons"));
+      enrollment.settlementStatus = form.get("settlementStatus");
+      enrollment.settlementMonth = getSettlementMonth(enrollment);
+
+      if (courseChanged) {
+        enrollment.totalLessons = courseTypes[courseType].totalLessons;
+        delete enrollment.customClassDates;
+        enrollment.settlementMonth = getSettlementMonth(enrollment);
+      }
+
+      saveState();
+      render();
+    }
+
+    if (event.target.id === "lesson-dates-form") {
+      event.preventDefault();
+      const enrollment = getEnrollment(selectedEnrollmentId);
+      if (!enrollment) return;
+
+      const form = new FormData(event.target);
+      const nextDate = form.get("selectedLessonDate");
+      enrollment.customClassDates = getClassDates(enrollment).map((date, index) =>
+        index === selectedLessonIndex && nextDate ? nextDate : date
+      );
+      enrollment.totalLessons = enrollment.customClassDates.length;
+      saveState();
+      render();
+    }
+  });
+
+  document.body.addEventListener("change", (event) => {
+    if (event.target.dataset.courtEnrollments !== undefined) {
+      const court = event.target.value.trim();
+      const ids = event.target.dataset.courtEnrollments.split(",");
+
+      state.enrollments.forEach((enrollment) => {
+        if (ids.includes(enrollment.id)) {
+          enrollment.court = court;
+        }
+      });
+
+      saveState();
+      render();
+      return;
+    }
+
+    if (event.target.name !== "courseType") return;
+
+    const form = event.target.closest("form");
+    setWeekdayCheckboxes(form, courseTypes[event.target.value].defaultPattern);
+  });
+};
+
+const init = async () => {
+  try {
+    document.querySelector("#salary-month").value = todayMonth();
+    await loadState();
+    document.querySelector("#schedule-date").value = getFirstAvailableLessonDate();
+    bindEvents();
+    isHydratingState = false;
+    writeCloudState();
+    render();
+  } catch (error) {
+    document.body.innerHTML = `
+      <main class="app-shell">
+        <section class="panel startup-error">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Startup Error</p>
+              <h2>页面初始化失败</h2>
+            </div>
+          </div>
+          <div class="list-area">
+            <p>请把以下错误信息发给我，我会继续修复：</p>
+            <pre>${escapeAttribute(error?.message || error)}</pre>
+          </div>
+        </section>
+      </main>
+    `;
+  }
+};
+
+init();
+
+</script>
+  </body>
+</html>
