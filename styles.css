@@ -453,6 +453,74 @@ h2 {
   display: none;
 }
 
+.cancel-history {
+  display: grid;
+  gap: 12px;
+  padding: 0 20px 20px;
+}
+
+.cancel-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.cancel-history-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.cancel-history-header span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cancel-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.cancel-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  border-radius: 14px;
+}
+
+.cancel-history-item strong,
+.cancel-history-item small {
+  display: block;
+}
+
+.cancel-history-item strong {
+  font-size: 14px;
+}
+
+.cancel-history-item small {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.cancel-history-item span {
+  flex: 0 0 auto;
+  min-width: 58px;
+  padding: 5px 9px;
+  color: var(--blue);
+  text-align: center;
+  background: var(--blue-soft);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .list-area {
   padding: 8px 20px 20px;
 }
@@ -977,7 +1045,7 @@ td strong {
 }
 
 .compact-modal {
-  width: min(620px, 100%);
+  width: min(700px, 100%);
 }
 
 .modal-header {

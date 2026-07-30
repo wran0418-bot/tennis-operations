@@ -282,12 +282,27 @@
             </select>
           </label>
           <label>
+            取消时段
+            <select name="cancelClassTime" required>
+              <option value="all">7-9、9-11 都取消</option>
+              <option value="7-9">只取消 7-9</option>
+              <option value="9-11">只取消 9-11</option>
+            </select>
+          </label>
+          <label>
             备注
             <input name="cancelNote" placeholder="例如：暴雨、国庆假期" />
           </label>
           <button type="submit">取消并顺延</button>
         </form>
         <div id="batch-cancel-result" class="operation-result" hidden></div>
+        <section class="cancel-history" aria-label="批量取消记录">
+          <div class="cancel-history-header">
+            <h3>批量取消记录</h3>
+            <span id="cancel-history-count">0 条</span>
+          </div>
+          <div id="cancel-history-list" class="cancel-history-list"></div>
+        </section>
       </section>
     </div>
 

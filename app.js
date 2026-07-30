@@ -225,6 +225,9 @@ const getEnrollmentCreatedAt = (enrollment) => {
 const getClassTime = (enrollment) =>
   classTimes.includes(enrollment.classTime) ? enrollment.classTime : "7-9";
 
+const getCancelClassTimeLabel = (classTime) =>
+  classTime === "all" || !classTime ? "7-9、9-11" : classTime;
+
 const getClassLevel = (enrollment) =>
   classLevels.includes(enrollment.classLevel) ? enrollment.classLevel : "提高班";
 
@@ -914,6 +917,40 @@ const renderStudentDetail = () => {
   `;
 };
 
+const renderCancelHistory = () => {
+  const list = document.querySelector("#cancel-history-list");
+  const count = document.querySelector("#cancel-history-count");
+  if (!list || !count) return;
+
+  const cancellations = [...(state.cancellations || [])].sort((a, b) =>
+    String(b.createdAt || b.date || "").localeCompare(String(a.createdAt || a.date || ""))
+  );
+
+  count.textContent = `${cancellations.length} 条`;
+
+  if (!cancellations.length) {
+    list.innerHTML = emptyState("暂无取消记录", "天气或节假日取消后，会在这里留下记录。");
+    return;
+  }
+
+  list.innerHTML = cancellations
+    .map((item) => {
+      const affectedCount = Array.isArray(item.affectedEnrollmentIds)
+        ? item.affectedEnrollmentIds.length
+        : 0;
+      return `
+        <article class="cancel-history-item">
+          <div>
+            <strong>${item.date || "未设置日期"} · ${getCancelClassTimeLabel(item.classTime)}</strong>
+            <small>${item.reason || "未填写原因"}${item.note ? ` · ${item.note}` : ""}</small>
+          </div>
+          <span>${affectedCount} 节课</span>
+        </article>
+      `;
+    })
+    .join("");
+};
+
 const renderManualForm = () => {
   const monthValue = document.querySelector("#salary-month").value;
   const coachId = document.querySelector("#manual-coach").value;
@@ -934,6 +971,7 @@ const render = () => {
   renderEnrollments();
   renderDailySchedule();
   renderStudentDetail();
+  renderCancelHistory();
 };
 
 const bindEvents = () => {
@@ -965,32 +1003,39 @@ const bindEvents = () => {
       const form = new FormData(event.currentTarget);
       const cancelDate = form.get("cancelDate");
       const reason = form.get("cancelReason");
+      const cancelClassTime = form.get("cancelClassTime");
       const note = form.get("cancelNote").trim();
       const affected = [];
 
       state.enrollments.forEach((enrollment) => {
         if (isInactiveCourse(enrollment)) return;
+        if (cancelClassTime !== "all" && getClassTime(enrollment) !== cancelClassTime) {
+          return;
+        }
         if (cancelEnrollmentLesson(enrollment, cancelDate)) {
           affected.push(enrollment);
         }
       });
 
-      state.cancellations = state.cancellations || [];
-      state.cancellations.push({
-        id: `cancel-${Date.now()}`,
-        date: cancelDate,
-        reason,
-        note,
-        affectedEnrollmentIds: affected.map((enrollment) => enrollment.id),
-        createdAt: new Date().toISOString(),
-      });
+      if (affected.length) {
+        state.cancellations = state.cancellations || [];
+        state.cancellations.push({
+          id: `cancel-${Date.now()}`,
+          date: cancelDate,
+          classTime: cancelClassTime,
+          reason,
+          note,
+          affectedEnrollmentIds: affected.map((enrollment) => enrollment.id),
+          createdAt: new Date().toISOString(),
+        });
+      }
 
       saveState();
       const result = document.querySelector("#batch-cancel-result");
       result.hidden = false;
       result.textContent = affected.length
-        ? `已取消 ${cancelDate} 的 ${affected.length} 节学员课程，并自动顺延。原因：${reason}${note ? `（${note}）` : ""}`
-        : `${cancelDate} 没有可取消的月卡课记录。`;
+        ? `已取消 ${cancelDate} ${getCancelClassTimeLabel(cancelClassTime)} 的 ${affected.length} 节学员课程，并自动顺延。原因：${reason}${note ? `（${note}）` : ""}`
+        : `${cancelDate} ${getCancelClassTimeLabel(cancelClassTime)} 没有可取消的月卡课记录。`;
       event.currentTarget.reset();
       document.querySelector("#schedule-date").value = cancelDate;
       render();
@@ -1113,6 +1158,10 @@ const bindEvents = () => {
     }
 
     if (shouldOpenBatchCancel) {
+      const form = document.querySelector("#batch-cancel-form");
+      if (form && document.querySelector("#schedule-date").value) {
+        form.elements.cancelDate.value = document.querySelector("#schedule-date").value;
+      }
       document.querySelector("#batch-cancel-modal").hidden = false;
     }
 
