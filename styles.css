@@ -69,6 +69,25 @@ button:active {
   transform: translateY(0);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+.danger-button {
+  color: var(--danger);
+  background: #fff1f2;
+  border: 1px solid rgba(180, 35, 24, 0.22);
+  box-shadow: none;
+}
+
+.danger-button:hover {
+  color: #ffffff;
+  background: var(--danger);
+  box-shadow: 0 10px 20px rgba(180, 35, 24, 0.14);
+}
+
 .app-shell {
   width: min(1320px, calc(100% - 32px));
   margin: 0 auto;
@@ -577,8 +596,7 @@ h2 {
   align-items: center;
 }
 
-.ghost-button,
-.danger-button {
+.ghost-button {
   min-height: 34px;
   padding: 0 11px;
   color: var(--ink);
@@ -588,13 +606,23 @@ h2 {
 }
 
 .danger-button {
+  min-height: 34px;
+  padding: 0 11px;
   color: var(--danger);
+  background: #fff1f2;
+  border: 1px solid rgba(180, 35, 24, 0.22);
+  box-shadow: none;
 }
 
-.ghost-button:hover,
-.danger-button:hover {
+.ghost-button:hover {
   background: var(--surface-soft);
   box-shadow: none;
+}
+
+.danger-button:hover {
+  color: #ffffff;
+  background: var(--danger);
+  box-shadow: 0 10px 20px rgba(180, 35, 24, 0.14);
 }
 
 .table-wrap {

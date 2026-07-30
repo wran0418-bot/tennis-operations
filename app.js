@@ -396,6 +396,25 @@ const cancelEnrollmentLesson = (enrollment, cancelDate) => {
   return true;
 };
 
+const addCancellationRecord = ({
+  date,
+  classTime,
+  reason,
+  note = "",
+  affectedEnrollmentIds = [],
+}) => {
+  state.cancellations = state.cancellations || [];
+  state.cancellations.push({
+    id: `cancel-${Date.now()}`,
+    date,
+    classTime,
+    reason,
+    note,
+    affectedEnrollmentIds,
+    createdAt: new Date().toISOString(),
+  });
+};
+
 const getCompletionDate = (enrollment) => {
   const dates = getClassDates(enrollment);
   return dates[dates.length - 1] || enrollment.expectedCompletionDate || enrollment.startDate;
@@ -908,8 +927,9 @@ const renderStudentDetail = () => {
           <input id="selected-lesson-date" name="selectedLessonDate" type="date" value="${selectedLessonDate}" />
         </label>
         <button type="submit">保存本次日期</button>
+        <button class="danger-button" data-cancel-selected-lesson type="button" ${selectedLessonDate ? "" : "disabled"}>取消本次课</button>
       </div>
-      <p class="helper-text">点亮的日期是已排课程。先点某一次课，再点目标日期即可调整这次课。</p>
+      <p class="helper-text">点亮的日期是已排课程。点击某次课选中记录，再点击普通日期可改期；也可以直接取消本次课并自动顺延。</p>
       <div class="student-lesson-calendar">
         ${renderStudentLessonCalendar(dates)}
       </div>
@@ -1018,15 +1038,12 @@ const bindEvents = () => {
       });
 
       if (affected.length) {
-        state.cancellations = state.cancellations || [];
-        state.cancellations.push({
-          id: `cancel-${Date.now()}`,
+        addCancellationRecord({
           date: cancelDate,
           classTime: cancelClassTime,
           reason,
           note,
           affectedEnrollmentIds: affected.map((enrollment) => enrollment.id),
-          createdAt: new Date().toISOString(),
         });
       }
 
@@ -1107,7 +1124,7 @@ const bindEvents = () => {
 
   document.body.addEventListener("click", (event) => {
     const actionTarget = event.target.closest(
-      "[data-delete-coach], [data-delete-enrollment], [data-select-enrollment], [data-open-enrollment], [data-close-modal], [data-open-batch-cancel], [data-close-batch-cancel], [data-select-lesson-index], [data-calendar-date]"
+      "[data-delete-coach], [data-delete-enrollment], [data-select-enrollment], [data-open-enrollment], [data-close-modal], [data-open-batch-cancel], [data-close-batch-cancel], [data-select-lesson-index], [data-calendar-date], [data-cancel-selected-lesson]"
     );
     const dataset = actionTarget?.dataset || {};
     const coachId = dataset.deleteCoach;
@@ -1121,6 +1138,7 @@ const bindEvents = () => {
     const shouldCloseBatchCancel =
       dataset.closeBatchCancel !== undefined ||
       event.target.id === "batch-cancel-modal";
+    const shouldCancelSelectedLesson = dataset.cancelSelectedLesson !== undefined;
 
     if (coachId) {
       state.coaches = state.coaches.filter((coach) => coach.id !== coachId);
@@ -1172,6 +1190,25 @@ const bindEvents = () => {
     if (dataset.selectLessonIndex !== undefined) {
       selectedLessonIndex = Number(dataset.selectLessonIndex);
       renderStudentDetail();
+    }
+
+    if (shouldCancelSelectedLesson) {
+      const enrollment = getEnrollment(selectedEnrollmentId);
+      if (!enrollment) return;
+      const selectedDate = getClassDates(enrollment)[selectedLessonIndex];
+      if (!selectedDate) return;
+
+      if (cancelEnrollmentLesson(enrollment, selectedDate)) {
+        addCancellationRecord({
+          date: selectedDate,
+          classTime: getClassTime(enrollment),
+          reason: "单次课程取消",
+          note: `${enrollment.studentName} 第 ${selectedLessonIndex + 1} 次课`,
+          affectedEnrollmentIds: [enrollment.id],
+        });
+        saveState();
+        render();
+      }
     }
 
     if (
