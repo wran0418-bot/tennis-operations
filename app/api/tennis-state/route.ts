@@ -16,6 +16,7 @@ type Enrollment = {
   courseName: string;
   commission: number;
   coachId: string;
+  coachName?: string;
   startDate: string;
   classTime: string;
   settlementStatus: string;
@@ -345,6 +346,7 @@ function enrollmentFromRecord(record: FeishuRecord, state: AppState): Enrollment
     courseName: course.label,
     commission: course.commission,
     coachId: findOrCreateCoach(state, coachName),
+    coachName,
     startDate,
     classTime: fieldToText(fields["上课时间"]) || "7-9",
     settlementStatus: "未结算",

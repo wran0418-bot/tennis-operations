@@ -219,8 +219,51 @@ const saveState = () => {
 const getCoach = (coachId) =>
   state.coaches.find((coach) => coach.id === coachId);
 
+const getCoachByName = (coachName) =>
+  state.coaches.find((coach) => coach.name === coachName);
+
+const getEnrollmentCoachId = (enrollment) => {
+  const coachByName = enrollment.coachName
+    ? getCoachByName(enrollment.coachName)
+    : null;
+  return coachByName?.id || enrollment.coachId;
+};
+
+const getEnrollmentCoach = (enrollment) =>
+  getCoach(getEnrollmentCoachId(enrollment));
+
 const getEnrollment = (enrollmentId) =>
   state.enrollments.find((enrollment) => enrollment.id === enrollmentId);
+
+const normalizeCoachAssignments = () => {
+  let changed = false;
+
+  state.enrollments.forEach((enrollment) => {
+    const coachByName = enrollment.coachName
+      ? getCoachByName(enrollment.coachName)
+      : null;
+
+    if (coachByName && enrollment.coachId !== coachByName.id) {
+      enrollment.coachId = coachByName.id;
+      changed = true;
+      return;
+    }
+
+    const coach = getCoach(enrollment.coachId);
+    if (coach && enrollment.coachName !== coach.name) {
+      enrollment.coachName = coach.name;
+      changed = true;
+    }
+  });
+
+  if (changed) saveState();
+};
+
+const setEnrollmentCoach = (enrollment, coachId) => {
+  const coach = getCoach(coachId);
+  enrollment.coachId = coachId;
+  enrollment.coachName = coach?.name || "";
+};
 
 const getEnrollmentCreatedAt = (enrollment) => {
   const timestamp = String(enrollment.id || "").match(/\d+/)?.[0];
@@ -437,7 +480,8 @@ const getMonthCardSummaryByCoach = (monthValue) => {
 
     const course = courseTypes[enrollment.courseType];
     const commission = toNumber(enrollment.commission) || course.commission;
-    const coachSummary = result[enrollment.coachId] || {
+    const coachId = getEnrollmentCoachId(enrollment);
+    const coachSummary = result[coachId] || {
       total: 0,
       count: 0,
       byCourseType: {},
@@ -452,7 +496,7 @@ const getMonthCardSummaryByCoach = (monthValue) => {
     coachSummary.byCourseType[enrollment.courseType] = courseSummary;
     coachSummary.count += 1;
     coachSummary.total += commission;
-    result[enrollment.coachId] = coachSummary;
+    result[coachId] = coachSummary;
   });
 
   return result;
@@ -698,7 +742,7 @@ const renderEnrollments = () => {
       ) {
         return false;
       }
-      if (filters.coachId && enrollment.coachId !== filters.coachId) return false;
+      if (filters.coachId && getEnrollmentCoachId(enrollment) !== filters.coachId) return false;
       if (filters.courseStatus && getCourseStatus(enrollment) !== filters.courseStatus) {
         return false;
       }
@@ -761,7 +805,7 @@ const renderEnrollments = () => {
 
   target.innerHTML = filtered
     .map((enrollment) => {
-      const coach = getCoach(enrollment.coachId);
+      const coach = getEnrollmentCoach(enrollment);
       const course = courseTypes[enrollment.courseType];
       const courseName = enrollment.courseName || course.label;
       const classLevel = getClassLevel(enrollment);
@@ -825,7 +869,7 @@ const renderDailySchedule = () => {
       getClassTime(enrollment),
       enrollment.courseType,
       getClassLevel(enrollment),
-      enrollment.coachId,
+      getEnrollmentCoachId(enrollment),
       enrollment.court || "未排",
     ].join("|");
 
@@ -834,7 +878,7 @@ const renderDailySchedule = () => {
         classTime: getClassTime(enrollment),
         classLevel: getClassLevel(enrollment),
         courseType: enrollment.courseType,
-        coachId: enrollment.coachId,
+        coachId: getEnrollmentCoachId(enrollment),
         court: enrollment.court || "未排",
         students: [],
       });
@@ -946,7 +990,7 @@ const renderStudentDetail = () => {
     .join("");
   const coachOptions = state.coaches
     .map((coach) => {
-      const selected = coach.id === enrollment.coachId ? "selected" : "";
+      const selected = coach.id === getEnrollmentCoachId(enrollment) ? "selected" : "";
       return `<option value="${coach.id}" ${selected}>${coach.name}</option>`;
     })
     .join("");
@@ -1077,6 +1121,7 @@ const renderManualForm = () => {
 };
 
 const render = () => {
+  normalizeCoachAssignments();
   updateCoachOptions();
   renderCoaches();
   renderManualForm();
@@ -1232,6 +1277,7 @@ const bindEvents = () => {
         courseName: courseTypes[courseType].label,
         commission: courseTypes[courseType].commission,
         coachId: form.get("coachId"),
+        coachName: getCoach(form.get("coachId"))?.name || "",
         startDate: form.get("startDate"),
         classTime: form.get("classTime"),
         settlementStatus: "未结算",
@@ -1378,7 +1424,7 @@ const bindEvents = () => {
       enrollment.classLevel = form.get("classLevel");
       enrollment.courseName = courseTypes[courseType].label;
       enrollment.commission = courseTypes[courseType].commission;
-      enrollment.coachId = form.get("coachId");
+      setEnrollmentCoach(enrollment, form.get("coachId"));
       enrollment.startDate = form.get("startDate");
       enrollment.classTime = form.get("classTime");
       enrollment.weekdayPattern = getWeekdayPatternFromForm(
