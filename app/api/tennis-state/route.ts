@@ -30,6 +30,8 @@ type AppState = {
   importedAt?: string;
   coaches?: Coach[];
   enrollments?: Enrollment[];
+  coachLessonRecords?: unknown[];
+  coachHourAdjustments?: unknown[];
   manualHours?: Record<string, unknown>;
   cancellations?: unknown[];
 };
@@ -239,6 +241,12 @@ function normalizeState(state: AppState | null): AppState {
     importedAt: state?.importedAt || "",
     coaches: Array.isArray(state?.coaches) ? state.coaches : [],
     enrollments: Array.isArray(state?.enrollments) ? state.enrollments : [],
+    coachLessonRecords: Array.isArray(state?.coachLessonRecords)
+      ? state.coachLessonRecords
+      : [],
+    coachHourAdjustments: Array.isArray(state?.coachHourAdjustments)
+      ? state.coachHourAdjustments
+      : [],
     manualHours: state?.manualHours && typeof state.manualHours === "object" ? state.manualHours : {},
     cancellations: Array.isArray(state?.cancellations) ? state.cancellations : [],
   };

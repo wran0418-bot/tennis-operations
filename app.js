@@ -61,6 +61,8 @@ let state = {
   importedAt: "",
   coaches: [],
   enrollments: [],
+  coachLessonRecords: [],
+  coachHourAdjustments: [],
   manualHours: {},
 };
 
@@ -165,6 +167,12 @@ const applySeedData = (data, saved) => {
   if (data.importedAt) state.importedAt = data.importedAt;
   if (Array.isArray(data.coaches)) state.coaches = data.coaches;
   if (Array.isArray(data.enrollments)) state.enrollments = data.enrollments;
+  if (Array.isArray(data.coachLessonRecords)) {
+    state.coachLessonRecords = data.coachLessonRecords;
+  }
+  if (Array.isArray(data.coachHourAdjustments)) {
+    state.coachHourAdjustments = data.coachHourAdjustments;
+  }
   if (data.manualHours) state.manualHours = data.manualHours;
   if (data.monthlyManualHours) state.manualHours = data.monthlyManualHours;
   saveState();
@@ -263,6 +271,137 @@ const setEnrollmentCoach = (enrollment, coachId) => {
   const coach = getCoach(coachId);
   enrollment.coachId = coachId;
   enrollment.coachName = coach?.name || "";
+};
+
+const ensureCoachByName = (coachName) => {
+  const existing = getCoachByName(coachName);
+  if (existing) return existing;
+
+  const coach = {
+    id: `coach-import-${Date.now()}-${state.coaches.length}`,
+    name: coachName,
+    level: "middle",
+  };
+  state.coaches.push(coach);
+  return coach;
+};
+
+const mergeCoachLessonRecords = (records) => {
+  state.coachLessonRecords = Array.isArray(state.coachLessonRecords)
+    ? state.coachLessonRecords
+    : [];
+  const existingByKey = new Map(
+    state.coachLessonRecords.map((record) => [record.sourceKey || record.id, record])
+  );
+
+  records.forEach((record) => {
+    const coach = ensureCoachByName(record.coachName);
+    existingByKey.set(record.sourceKey || record.id, {
+      ...record,
+      coachId: coach.id,
+    });
+  });
+
+  state.coachLessonRecords = [...existingByKey.values()].sort((a, b) =>
+    String(b.lessonDate || "").localeCompare(String(a.lessonDate || ""))
+  );
+};
+
+const recalculateManualHoursFromLessonRecords = () => {
+  const records = Array.isArray(state.coachLessonRecords)
+    ? state.coachLessonRecords
+    : [];
+
+  records.forEach((record) => {
+    if (!record.importMonth || !record.coachId) return;
+    state.manualHours[record.importMonth] = state.manualHours[record.importMonth] || {};
+    state.manualHours[record.importMonth][record.coachId] =
+      state.manualHours[record.importMonth][record.coachId] || {
+        privateHours: 0,
+        groupHours: 0,
+        sparringHours: 0,
+      };
+    state.manualHours[record.importMonth][record.coachId].privateHours = 0;
+    state.manualHours[record.importMonth][record.coachId].groupHours = 0;
+    state.manualHours[record.importMonth][record.coachId].sparringHours = 0;
+  });
+
+  records.forEach((record) => {
+    if (!record.importMonth || !record.coachId) return;
+    const hours = state.manualHours[record.importMonth]?.[record.coachId];
+    if (!hours) return;
+
+    if (record.courseType === "私教") {
+      hours.privateHours += toNumber(record.duration);
+    }
+    if (record.courseType === "团课") {
+      hours.groupHours += toNumber(record.duration);
+    }
+    if (record.courseType === "陪打") {
+      hours.sparringHours += toNumber(record.duration);
+    }
+  });
+};
+
+const getCoachLessonImportSummary = (monthValue) => {
+  const summary = {};
+  (state.coachLessonRecords || [])
+    .filter((record) => record.importMonth === monthValue)
+    .forEach((record) => {
+      const coach = getCoach(record.coachId) || ensureCoachByName(record.coachName);
+      const coachSummary = summary[coach.id] || {
+        coachName: coach.name,
+        privateHours: 0,
+        groupHours: 0,
+        sparringHours: 0,
+        monthCardHours: 0,
+        recordCount: 0,
+      };
+      coachSummary.recordCount += 1;
+      if (record.courseType === "私教") coachSummary.privateHours += toNumber(record.duration);
+      if (record.courseType === "团课") coachSummary.groupHours += toNumber(record.duration);
+      if (record.courseType === "陪打") coachSummary.sparringHours += toNumber(record.duration);
+      if (record.courseType === "月卡课") coachSummary.monthCardHours += toNumber(record.duration);
+      summary[coach.id] = coachSummary;
+    });
+  return summary;
+};
+
+const getHourTypeLabel = (hourType) =>
+  ({
+    privateHours: "私教",
+    groupHours: "团课",
+    sparringHours: "陪打",
+  })[hourType] || "课时";
+
+const getCoachHourAdjustments = (monthValue, coachId = "") =>
+  (state.coachHourAdjustments || [])
+    .filter((adjustment) => adjustment.month === monthValue)
+    .filter((adjustment) => !coachId || adjustment.coachId === coachId);
+
+const getAdjustmentTotals = (monthValue, coachId) =>
+  getCoachHourAdjustments(monthValue, coachId).reduce(
+    (totals, adjustment) => {
+      if (totals[adjustment.hourType] !== undefined) {
+        totals[adjustment.hourType] += toNumber(adjustment.hours);
+      }
+      return totals;
+    },
+    {
+      privateHours: 0,
+      groupHours: 0,
+      sparringHours: 0,
+    }
+  );
+
+const getPayrollHours = (monthValue, coachId) => {
+  const base = state.manualHours[monthValue]?.[coachId] || {};
+  const adjustments = getAdjustmentTotals(monthValue, coachId);
+  return {
+    privateHours: toNumber(base.privateHours) + adjustments.privateHours,
+    groupHours: toNumber(base.groupHours) + adjustments.groupHours,
+    sparringHours: toNumber(base.sparringHours) + adjustments.sparringHours,
+  };
 };
 
 const getEnrollmentCreatedAt = (enrollment) => {
@@ -589,8 +728,8 @@ const updateCoachOptions = () => {
   const options = state.coaches
     .map((coach) => `<option value="${coach.id}">${coach.name}</option>`)
     .join("");
-  document.querySelector("#manual-coach").innerHTML = options;
   document.querySelector("#enrollment-coach").innerHTML = options;
+  document.querySelector("#adjustment-coach").innerHTML = options;
 
   const filter = document.querySelector("#filter-coach");
   if (filter) {
@@ -630,6 +769,12 @@ const renderCoaches = () => {
   target.innerHTML = state.coaches
     .map((coach) => {
       const level = coachLevels[coach.level];
+      const levelOptions = Object.entries(coachLevels)
+        .map(([value, option]) => {
+          const selected = value === coach.level ? "selected" : "";
+          return `<option value="${value}" ${selected}>${option.label}</option>`;
+        })
+        .join("");
       return `
         <div class="record">
           <div>
@@ -637,7 +782,77 @@ const renderCoaches = () => {
             <small>${level.label} · 私教/班课 ${level.privateRate} 元/小时 · 陪打 ${level.sparringRate} 元/小时</small>
           </div>
           <div class="record-actions">
+            <select class="inline-select" data-coach-level="${coach.id}" aria-label="修改 ${coach.name} 的教练等级">
+              ${levelOptions}
+            </select>
             <button class="danger-button" data-delete-coach="${coach.id}" type="button">删除</button>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+};
+
+const renderCoachLessonImportSummary = () => {
+  const target = document.querySelector("#coach-lesson-import-summary");
+  if (!target) return;
+
+  const monthValue = document.querySelector("#salary-month").value;
+  const summary = Object.values(getCoachLessonImportSummary(monthValue));
+
+  if (!summary.length) {
+    target.innerHTML = emptyState(
+      "暂无导入明细",
+      "上传课程系统 Excel 后，会在这里显示本月自动统计结果。"
+    );
+    return;
+  }
+
+  target.innerHTML = summary
+    .map(
+      (item) => `
+        <div class="record compact-record">
+          <div>
+            <strong>${item.coachName}</strong>
+            <small>
+              ${item.recordCount} 条记录 · 私教 ${item.privateHours} 小时 · 团课 ${item.groupHours} 小时 · 陪打 ${item.sparringHours} 小时 · 月卡课 ${item.monthCardHours} 小时
+            </small>
+          </div>
+        </div>
+      `
+    )
+    .join("");
+};
+
+const renderHourAdjustments = () => {
+  const target = document.querySelector("#hour-adjustment-list");
+  if (!target) return;
+
+  const monthValue = document.querySelector("#salary-month").value;
+  const adjustments = getCoachHourAdjustments(monthValue).sort((a, b) =>
+    String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+  );
+
+  if (!adjustments.length) {
+    target.innerHTML = emptyState(
+      "暂无调整记录",
+      "保存课时调整后，会在这里显示调整原因和调整数量。"
+    );
+    return;
+  }
+
+  target.innerHTML = adjustments
+    .map((adjustment) => {
+      const coach = getCoach(adjustment.coachId);
+      const hours = toNumber(adjustment.hours);
+      return `
+        <div class="record compact-record">
+          <div>
+            <strong>${coach?.name || adjustment.coachName || "未指定教练"} · ${getHourTypeLabel(adjustment.hourType)} ${hours > 0 ? "+" : ""}${hours} 小时</strong>
+            <small>${adjustment.reason || "未填写原因"} · ${adjustment.createdAt?.slice(0, 10) || ""}</small>
+          </div>
+          <div class="record-actions">
+            <button class="danger-button" data-delete-hour-adjustment="${adjustment.id}" type="button">删除</button>
           </div>
         </div>
       `;
@@ -647,7 +862,6 @@ const renderCoaches = () => {
 
 const renderSalary = () => {
   const monthValue = document.querySelector("#salary-month").value;
-  const monthHours = state.manualHours[monthValue] || {};
   const monthlyCardSummary = getMonthCardSummaryByCoach(monthValue);
   const completedCount = state.enrollments.filter((enrollment) => {
     if (isInactiveCourse(enrollment)) return false;
@@ -663,7 +877,7 @@ const renderSalary = () => {
   document.querySelector("#salary-table").innerHTML = state.coaches
     .map((coach) => {
       const level = coachLevels[coach.level];
-      const hours = monthHours[coach.id] || {};
+      const hours = getPayrollHours(monthValue, coach.id);
       const privateHours = toNumber(hours.privateHours);
       const groupHours = toNumber(hours.groupHours);
       const sparringHours = toNumber(hours.sparringHours);
@@ -699,6 +913,8 @@ const renderSalary = () => {
   document.querySelector("#total-salary").textContent = currency.format(salaryTotal);
   document.querySelector("#monthly-commission").textContent = currency.format(cardTotal);
   document.querySelector("#completed-students").textContent = completedCount;
+  renderCoachLessonImportSummary();
+  renderHourAdjustments();
 };
 
 const renderEnrollments = () => {
@@ -1108,23 +1324,10 @@ const renderCancelHistory = () => {
     .join("");
 };
 
-const renderManualForm = () => {
-  const monthValue = document.querySelector("#salary-month").value;
-  const coachId = document.querySelector("#manual-coach").value;
-  const hours = state.manualHours[monthValue]?.[coachId] || {};
-
-  document.querySelector('[name="privateHours"]').value =
-    hours.privateHours ?? 0;
-  document.querySelector('[name="groupHours"]').value = hours.groupHours ?? 0;
-  document.querySelector('[name="sparringHours"]').value =
-    hours.sparringHours ?? 0;
-};
-
 const render = () => {
   normalizeCoachAssignments();
   updateCoachOptions();
   renderCoaches();
-  renderManualForm();
   renderSalary();
   renderEnrollments();
   renderDailySchedule();
@@ -1149,7 +1352,6 @@ const bindEvents = () => {
   });
 
   document.querySelector("#salary-month").addEventListener("change", render);
-  document.querySelector("#manual-coach").addEventListener("change", renderManualForm);
   document.querySelector("#schedule-date").addEventListener("change", renderDailySchedule);
   document.querySelector("#record-filters").addEventListener("change", renderEnrollments);
   document.querySelector("#record-filters").addEventListener("input", renderEnrollments);
@@ -1183,6 +1385,78 @@ const bindEvents = () => {
       });
 
       selectedSettlementEnrollmentIds.clear();
+      saveState();
+      render();
+    });
+
+  document
+    .querySelector("#coach-excel-import-form")
+    .addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const result = document.querySelector("#coach-excel-import-result");
+      const button = form.querySelector("button");
+      const file = form.elements.file.files?.[0];
+
+      if (!file) return;
+
+      result.hidden = false;
+      result.textContent = "正在解析 Excel...";
+      button.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/coach-hours-import", {
+          method: "POST",
+          body: formData,
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "导入失败");
+        }
+
+        mergeCoachLessonRecords(payload.records || []);
+        recalculateManualHoursFromLessonRecords();
+        saveState();
+        render();
+
+        const feishuText = payload.feishu?.error
+          ? `，飞书写入失败：${payload.feishu.error}`
+          : payload.feishu?.configured
+            ? `，已写入飞书 ${payload.feishu.written || 0} 条`
+            : "，飞书明细表未配置 table_id，仅保存到网页云端数据";
+        result.textContent = `已解析 ${payload.parsed || 0} 条记录，跳过 ${payload.skipped || 0} 条${feishuText}。`;
+        form.reset();
+      } catch (error) {
+        result.textContent = error?.message || "导入失败，请检查 Excel 格式";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+  document
+    .querySelector("#hour-adjustment-form")
+    .addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const coachId = form.get("coachId");
+      const coach = getCoach(coachId);
+      const hours = toNumber(form.get("hours"));
+
+      state.coachHourAdjustments = state.coachHourAdjustments || [];
+      state.coachHourAdjustments.push({
+        id: `adjustment-${Date.now()}`,
+        month: document.querySelector("#salary-month").value,
+        coachId,
+        coachName: coach?.name || "",
+        hourType: form.get("hourType"),
+        hours,
+        reason: form.get("reason").trim(),
+        createdAt: new Date().toISOString(),
+      });
+
+      event.currentTarget.reset();
       saveState();
       render();
     });
@@ -1244,25 +1518,6 @@ const bindEvents = () => {
   });
 
   document
-    .querySelector("#manual-hours-form")
-    .addEventListener("submit", (event) => {
-      event.preventDefault();
-      const form = new FormData(event.currentTarget);
-      const monthValue = document.querySelector("#salary-month").value;
-      const coachId = form.get("coachId");
-
-      state.manualHours[monthValue] = state.manualHours[monthValue] || {};
-      state.manualHours[monthValue][coachId] = {
-        privateHours: toNumber(form.get("privateHours")),
-        groupHours: toNumber(form.get("groupHours")),
-        sparringHours: toNumber(form.get("sparringHours")),
-      };
-
-      saveState();
-      render();
-    });
-
-  document
     .querySelector("#enrollment-form")
     .addEventListener("submit", (event) => {
       event.preventDefault();
@@ -1296,11 +1551,12 @@ const bindEvents = () => {
 
   document.body.addEventListener("click", (event) => {
     const actionTarget = event.target.closest(
-      "[data-delete-coach], [data-delete-enrollment], [data-select-enrollment], [data-open-enrollment], [data-close-modal], [data-open-batch-cancel], [data-close-batch-cancel], [data-select-lesson-index], [data-calendar-date], [data-cancel-selected-lesson]"
+      "[data-delete-coach], [data-delete-enrollment], [data-delete-hour-adjustment], [data-select-enrollment], [data-open-enrollment], [data-close-modal], [data-open-batch-cancel], [data-close-batch-cancel], [data-select-lesson-index], [data-calendar-date], [data-cancel-selected-lesson]"
     );
     const dataset = actionTarget?.dataset || {};
     const coachId = dataset.deleteCoach;
     const enrollmentId = dataset.deleteEnrollment;
+    const adjustmentId = dataset.deleteHourAdjustment;
     const selectedId = dataset.selectEnrollment;
     const openId = dataset.openEnrollment;
     const shouldCloseModal =
@@ -1330,6 +1586,14 @@ const bindEvents = () => {
         selectedEnrollmentId = "";
         isStudentModalOpen = false;
       }
+      saveState();
+      render();
+    }
+
+    if (adjustmentId) {
+      state.coachHourAdjustments = (state.coachHourAdjustments || []).filter(
+        (adjustment) => adjustment.id !== adjustmentId
+      );
       saveState();
       render();
     }
@@ -1462,6 +1726,15 @@ const bindEvents = () => {
   });
 
   document.body.addEventListener("change", (event) => {
+    if (event.target.dataset.coachLevel !== undefined) {
+      const coach = getCoach(event.target.dataset.coachLevel);
+      if (!coach) return;
+      coach.level = event.target.value;
+      saveState();
+      render();
+      return;
+    }
+
     if (event.target.name === "settlementSelection") {
       if (event.target.checked) {
         selectedSettlementEnrollmentIds.add(event.target.value);

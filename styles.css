@@ -544,6 +544,10 @@ h2 {
   padding: 8px 20px 20px;
 }
 
+.compact-list {
+  padding-top: 0;
+}
+
 .batch-settlement-bar {
   display: flex;
   align-items: center;
@@ -607,6 +611,10 @@ h2 {
   border-bottom: 0;
 }
 
+.compact-record {
+  padding: 10px 0;
+}
+
 .record strong {
   display: block;
   margin-bottom: 5px;
@@ -629,6 +637,16 @@ h2 {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.inline-select {
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: none;
 }
 
 .ghost-button {
